@@ -252,14 +252,14 @@ final class EVChargingManager {
             guidanceState: guidanceState
         )
 
-        let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
-            stateOfCharge: stateOfCharge,
-            direction: .imported,
-            power: Measurement(value: power, unit: .kilowatts),
-            energy: Measurement(value: energy, unit: .kilowattHours)
-        )
-
-        if #available(iOS 27.0, iPadOS 27.0, *) {
+        if #available(iOS 27.0, *) {
+            let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
+                stateOfCharge: stateOfCharge,
+                direction: .imported,
+                power: Measurement(value: power, unit: .kilowatts),
+                energy: Measurement(value: energy, unit: .kilowattHours),
+                performanceMetrics: nil
+            )
             let device = ElectricalLoadDevice(
                 id: deviceID,
                 name: deviceName,
@@ -272,6 +272,12 @@ final class EVChargingManager {
         }
 
         // iOS/iPadOS 26 compatibility; deprecated in the iOS 27 SDK.
+        let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
+            stateOfCharge: stateOfCharge,
+            direction: .imported,
+            power: Measurement(value: power, unit: .kilowatts),
+            energy: Measurement(value: energy, unit: .kilowattHours)
+        )
         return ElectricVehicleLoadEvent(
             timestamp: Date(), measurement: measurement,
             session: session, deviceID: deviceID
@@ -393,7 +399,7 @@ final class HVACManager {
 
         let measurement = ElectricHVACLoadEvent.ElectricalMeasurement(stage: stage)
 
-        if #available(iOS 27.0, iPadOS 27.0, *) {
+        if #available(iOS 27.0, *) {
             let device = ElectricalLoadDevice(
                 id: deviceID,
                 name: deviceName,
@@ -564,7 +570,7 @@ func processInsightRecords(
         guard let total = record.totalEnergy else { return nil }
 
         let cleanliness: (cleaner: Double?, lessClean: Double?)
-        if #available(iOS 26.1, iPadOS 26.1, *) {
+        if #available(iOS 26.1, *) {
             cleanliness = (
                 record.dataByGridCleanliness?.cleaner?
                     .converted(to: .kilowattHours).value,

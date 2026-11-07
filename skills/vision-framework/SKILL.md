@@ -200,23 +200,27 @@ auto-capture, perspective correction, and multi-page scanning.
 ### Modern: GeneratePersonSegmentationRequest (iOS 18+)
 
 ```swift
-var request = GeneratePersonSegmentationRequest()
+let request = GeneratePersonSegmentationRequest()
 request.qualityLevel = .accurate  // .balanced, .fast
 
 let mask = try await request.perform(on: cgImage)
-// mask is a PixelBufferObservation with a pixelBuffer property
-let maskBuffer = mask.pixelBuffer
+// Convert the PixelBufferObservation for Core Image on iOS 18+.
+let maskImage = CIImage(cgImage: try mask.cgImage)
 // Apply mask using Core Image: CIFilter.blendWithMask()
 ```
+
+On iOS 27+, `PixelBufferObservation.pixelBuffer` also exposes a
+`CVReadOnlyPixelBuffer` when direct pixel access is needed. See
+[PixelBufferObservation](https://sosumi.ai/documentation/vision/pixelbufferobservation).
 
 ### Legacy: VNGeneratePersonSegmentationRequest
 
 For older targets, `VNGeneratePersonSegmentationRequest` exposes its mask through the first pixel-buffer observation; use the reference's handler and mask-composition recipe.
 
 Quality levels:
-- `.accurate` -- best quality, slowest (~1s), full resolution
-- `.balanced` -- good quality, moderate speed (~100ms), 960x540
-- `.fast` -- lowest quality, fastest (~10ms), 256x144, suitable for real-time
+- `.accurate` -- prioritize mask quality
+- `.balanced` -- trade off speed and mask quality
+- `.fast` -- prioritize speed, then measure on the target hardware for live video
 
 ### Instance Segmentation (iOS 18+)
 

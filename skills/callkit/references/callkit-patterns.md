@@ -38,7 +38,6 @@ final class VoIPCallManager: NSObject {
 
     override init() {
         let config = CXProviderConfiguration()
-        config.localizedName = "My VoIP"
         config.supportsVideo = true
         config.maximumCallGroups = 2
         config.maximumCallsPerCallGroup = 1

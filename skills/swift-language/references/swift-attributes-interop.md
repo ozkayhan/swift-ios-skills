@@ -22,15 +22,15 @@ public func processBuffer(_ buffer: UnsafePointer<UInt8>?, _ count: Int32) -> In
 ```
 
 **Requirements:**
-- Parameters and return types must be C-compatible (primitives, pointers, tuples of C-compatible types)
-- No Swift-only types (`String`, `Array`, `UnsafeBufferPointer`, closures, generic placeholders, etc.) in the signature
+- Parameters and return types must be C-compatible (primitives, pointers, imported C types, and C-compatible function pointers)
+- No Swift-only types (`String`, `Array`, `UnsafeBufferPointer`, tuples, or generic placeholders) in the signature
 - The function must be a module-level free function (not a method)
 - Use `@c(CustomName)` when the C symbol should differ from the Swift function name
 - SE-0495 also supports `@c` enums with C-compatible integer raw types; this section focuses on function export
 
 ## Module Selectors
 
-SE-0491 adds `ModuleName::symbolName` syntax to disambiguate identically named symbols from different modules without `import` aliasing.
+Swift 6.4 adds `ModuleName::symbolName` syntax to disambiguate identically named symbols from different modules. For a Swift 6.3 toolchain, use ordinary module qualification where it resolves the name; if a declaration still shadows the module, resolve the name collision before using it. See [Swift 6.4 release notes](https://www.swift.org/blog/swift-6.4-released/).
 
 ```swift
 import NetworkingA

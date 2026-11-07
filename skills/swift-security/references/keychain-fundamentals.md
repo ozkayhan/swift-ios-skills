@@ -75,7 +75,7 @@ Other attributes like `kSecAttrGeneric`, `kSecAttrLabel`, or `kSecAttrDescriptio
 
 For `kSecClassInternetPassword`, the uniqueness set includes: `kSecAttrAccount` + `kSecAttrServer` + `kSecAttrProtocol` + `kSecAttrAuthenticationType` + `kSecAttrPort` + `kSecAttrPath` + `kSecAttrSecurityDomain` + `kSecAttrAccessGroup` + `kSecAttrSynchronizable`.
 
-**Immutable attributes:** `kSecAttrAccount` and `kSecClass` cannot be changed via `SecItemUpdate`. To change them, delete and re-add the item (see `keychain-item-classes.md`).
+**Attribute changes:** Select the item by its current attributes, then pass the new `kSecAttrAccount` in the update dictionary. To change the item class, add and verify the replacement before deleting the original. See [Updating and deleting keychain items](https://sosumi.ai/documentation/security/updating-and-deleting-keychain-items).
 
 ---
 

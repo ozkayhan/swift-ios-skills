@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-This repository is a maintained collection of Agent Skills for modern Apple platform development, centered on **iOS and iPadOS 26+**, **Swift 6.3**, and current Apple frameworks.
+This repository is a maintained collection of Agent Skills for modern Apple platform development, centered on **iOS and iPadOS 26+**, **Swift 6.4**, and current Apple frameworks.
 
 This is not a buildable app or Swift package. The main work here is **authoring, refining, and reorganizing skill content** so the skills are accurate, discoverable, and useful to future agents.
 

@@ -274,7 +274,7 @@ import UIKit
 import UserNotifications
 import UserNotificationsUI
 
-class NotificationViewController: UIViewController, UNNotificationContentExtension {
+class NotificationViewController: UIViewController, @MainActor UNNotificationContentExtension {
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var bodyLabel: UILabel!
     @IBOutlet weak var imageView: UIImageView!
@@ -318,6 +318,8 @@ class NotificationViewController: UIViewController, UNNotificationContentExtensi
                     try? await Task.sleep(for: .seconds(1.0))
                     completion(.dismiss)
                 }
+            } else {
+                completion(.dismissAndForwardAction)
             }
 
         default:
@@ -341,14 +343,14 @@ class NotificationViewController: UIViewController, UNNotificationContentExtensi
 The content extension can play audio or video. Implement `mediaPlayPauseButtonType` and `mediaPlayPauseButtonFrame` for a system-provided play/pause button.
 
 ```swift
-class MediaNotificationViewController: UIViewController, UNNotificationContentExtension {
+class MediaNotificationViewController: UIViewController, @MainActor UNNotificationContentExtension {
     var player: AVPlayer?
 
-    override var mediaPlayPauseButtonType: UNNotificationContentExtensionMediaPlayPauseButtonType {
+    var mediaPlayPauseButtonType: UNNotificationContentExtensionMediaPlayPauseButtonType {
         return .overlay  // .none, .default, .overlay
     }
 
-    override var mediaPlayPauseButtonFrame: CGRect {
+    var mediaPlayPauseButtonFrame: CGRect {
         return CGRect(x: 0, y: 0, width: view.bounds.width, height: view.bounds.height)
     }
 
@@ -379,7 +381,7 @@ class MediaNotificationViewController: UIViewController, UNNotificationContentEx
 With `UNNotificationExtensionUserInteractionEnabled` set to `true`, the content extension supports gesture recognizers, buttons, and other interactive elements.
 
 ```swift
-class InteractiveNotificationViewController: UIViewController, UNNotificationContentExtension {
+class InteractiveNotificationViewController: UIViewController, @MainActor UNNotificationContentExtension {
     private var ratingStars: [UIButton] = []
     private var selectedRating = 0
 

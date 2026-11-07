@@ -222,8 +222,16 @@ let routeChoice = CPRouteChoice(
     additionalInformationVariants: ["Via Highway 101"],
     selectionSummaryVariants: ["25 min"]
 )
-let trip = CPTrip(origin: origin, destination: destination,
-                  routeChoices: [routeChoice])
+let trip: CPTrip
+if #available(iOS 26.4, *) {
+    trip = CPTrip(
+        originWaypoint: CPNavigationWaypoint(mapItem: origin, locationThreshold: nil, entryPoints: []),
+        destinationWaypoint: CPNavigationWaypoint(mapItem: destination, locationThreshold: nil, entryPoints: []),
+        routeChoices: [routeChoice]
+    )
+} else {
+    trip = CPTrip(origin: origin, destination: destination, routeChoices: [routeChoice])
+}
 mapTemplate.showTripPreviews([trip], textConfiguration: nil)
 ```
 
@@ -354,9 +362,8 @@ and `CPInformationTemplate` to display locations and details.
 
 ```swift
 let poi = CPPointOfInterest(
-    location: MKMapItem(placemark: MKPlacemark(
-        coordinate: CLLocationCoordinate2D(latitude: 37.7749,
-                                           longitude: -122.4194))),
+    location: MKMapItem(location: CLLocation(latitude: 37.7749, longitude: -122.4194),
+                        address: nil),
     title: "SuperCharger Station", subtitle: "4 available",
     summary: "150 kW DC fast charging",
     detailTitle: "SuperCharger Station", detailSubtitle: "$0.28/kWh",

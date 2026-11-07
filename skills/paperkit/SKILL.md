@@ -5,8 +5,6 @@ description: "Add drawings, shapes, and a consistent markup experience using Pap
 
 # PaperKit
 
-> **Beta-sensitive.** PaperKit is new in iOS/iPadOS 26, macOS 26, and visionOS 26. API surface may change. Verify details against current Apple documentation before shipping.
-
 PaperKit combines PencilKit drawing with structured markup elements such as shapes, text, images, and lines in a canvas managed by `PaperMarkupViewController`.
 
 ## Contents
@@ -62,7 +60,7 @@ import PaperKit
 import PencilKit
 import UIKit
 
-class MarkupViewController: UIViewController, PaperMarkupViewController.Delegate {
+class MarkupViewController: UIViewController, @MainActor PaperMarkupViewController.Delegate {
     var paperVC: PaperMarkupViewController!
     var toolPicker: PKToolPicker!
 
@@ -204,7 +202,7 @@ Shape types: `.rectangle`, `.roundedRectangle`, `.ellipse`, `.line`, `.arrowShap
 ```swift
 markup.append(contentsOf: otherMarkup)       // Merge another PaperMarkup
 markup.append(contentsOf: pkDrawing)          // Merge a PKDrawing
-markup.transformContent(CGAffineTransform(...)) // Apply affine transform
+markup.transformContent(CGAffineTransform(translationX: 10, y: 0)) // Apply affine transform
 markup.removeContentUnsupported(by: featureSet) // Strip unsupported elements
 ```
 
@@ -349,6 +347,10 @@ let pkVersion = features.contentVersion.pencilKitContentVersion
 Wrap `PaperMarkupViewController` in `UIViewControllerRepresentable`:
 
 ```swift
+import PaperKit
+import PencilKit
+import SwiftUI
+
 struct MarkupView: UIViewControllerRepresentable {
     @Binding var markup: PaperMarkup
     let features: FeatureSet
@@ -365,13 +367,15 @@ struct MarkupView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ vc: PaperMarkupViewController, context: Context) {
+        context.coordinator.parent = self
         if vc.markup != markup { vc.markup = markup }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
-    class Coordinator: NSObject, PaperMarkupViewController.Delegate {
-        let parent: MarkupView
+    @MainActor
+    class Coordinator: NSObject, @MainActor PaperMarkupViewController.Delegate {
+        var parent: MarkupView
         var toolPicker: PKToolPicker?
         init(parent: MarkupView) { self.parent = parent }
 

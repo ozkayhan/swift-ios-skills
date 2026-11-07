@@ -194,7 +194,7 @@ let data = try await note.exported(as: .note)
 UIPasteboard.general.setData(data, forPasteboardType: UTType.note.identifier)
 ```
 
-On macOS 13+, prefer SwiftUI's `.copyable`, `.cuttable`, and command-based `.pasteDestination(for:action:validator:)` modifiers over direct pasteboard usage when you are wiring Edit menu commands and keyboard shortcuts. Current Apple docs list those command modifiers as iOS/iPadOS/Mac Catalyst 27 beta, not iOS 26 defaults. On iOS 26 targets, use `UIPasteboard` directly for custom clipboard commands, or use SwiftUI drag/drop and `ShareLink` for Transferable-driven sharing flows.
+On macOS 13+, prefer SwiftUI's `.copyable`, `.cuttable`, and command-based `.pasteDestination(for:action:validator:)` modifiers over direct pasteboard usage when you are wiring Edit menu commands and keyboard shortcuts. Current Apple docs list those command modifiers as iOS/iPadOS/Mac Catalyst 27+, not iOS 26 defaults. On iOS 26 targets, use `UIPasteboard` directly for custom clipboard commands, or use SwiftUI drag/drop and `ShareLink` for Transferable-driven sharing flows.
 
 > **Docs:** [copyable(_:)](https://sosumi.ai/documentation/swiftui/view/copyable(_:)) · [cuttable(for:action:)](https://sosumi.ai/documentation/swiftui/view/cuttable(for:action:)) · [pasteDestination(for:action:validator:)](https://sosumi.ai/documentation/swiftui/view/pastedestination(for:action:validator:))
 
@@ -248,7 +248,7 @@ Use consistent patterns for loading images, previewing media, and presenting a f
 
 ### Core patterns
 
-- Use `AsyncImage` for simple remote images. `LazyImage` is from the third-party Nuke library if you need advanced caching and prefetching.
+- Use `AsyncImage` for simple remote images. On iOS 27+, it respects HTTP caching by default. Use `AsyncImage(request:)` for per-request cache policy and `.asyncImageURLSession(_:)` to supply a configured session. Consider a dedicated image pipeline for needs such as prefetching or for equivalent cache control on earlier systems. See [What’s new in SwiftUI](https://sosumi.ai/videos/play/wwdc2026/269/).
 - Prefer a lightweight preview component for inline media.
 - Use a shared viewer state (e.g., `QuickLook`) to present a full-screen media viewer.
 - Use `openWindow` for desktop/visionOS and a sheet for iOS.

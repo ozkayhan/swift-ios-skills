@@ -29,7 +29,7 @@
     },
     {
       "name": "Screenshot sizes",
-      "description": "Includes current iPhone and iPad screenshot compliance, specifically 6.9-inch iPhone screenshots and 13-inch iPad screenshots when the app runs on iPad.",
+      "description": "Includes current iPhone and iPad screenshot compliance, specifically iPhone with Dynamic Island (medium display) screenshots and 13-inch iPad screenshots when the app runs on iPad.",
       "max_score": 14
     },
     {

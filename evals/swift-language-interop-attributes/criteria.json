@@ -1,5 +1,5 @@
 {
-  "context": "Tests whether the solver follows swift-language guidance for Swift 6.3 C interop, specialization, inlining, and module-selector syntax.",
+  "context": "Tests whether the solver follows swift-language guidance for Swift 6.3 C interop, specialization, inlining, and the Swift 6.4 module-selector boundary.",
   "type": "weighted_checklist",
   "checklist": [
     {
@@ -29,7 +29,7 @@
     },
     {
       "name": "Module selector",
-      "description": "Uses ModuleName::symbol syntax for module selectors.",
+      "description": "Uses ModuleName::symbol syntax for module selectors and states it requires Swift 6.4.",
       "max_score": 12
     },
     {

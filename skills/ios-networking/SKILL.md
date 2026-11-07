@@ -237,7 +237,7 @@ func fetchWithTokenRefresh<T: Decodable & Sendable>(
 ) async throws -> T {
     do {
         return try await fetch(type, endpoint: endpoint)
-    } catch NetworkError.httpError(statusCode: 401, _) {
+    } catch NetworkError.httpError(401, _) {
         try await tokenStore.refreshToken()
         return try await fetch(type, endpoint: endpoint)
     }

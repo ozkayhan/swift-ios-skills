@@ -24,7 +24,7 @@ framework, background URLSession, and background push notifications.
 ## Info.plist Configuration
 
 Every task identifier **must** be declared in `Info.plist` under
-`BGTaskSchedulerPermittedIdentifiers`, or `submit(_:)` throws
+`BGTaskSchedulerPermittedIdentifiers`, or submission fails with
 `BGTaskScheduler.Error.Code.notPermitted`.
 
 ```xml
@@ -108,33 +108,51 @@ struct MyApp: App {
 }
 ```
 
+On iOS 27+, submit with [`submitTaskRequest(_:)`](https://sosumi.ai/documentation/backgroundtasks/bgtaskscheduler/submittaskrequest(_:completionhandler:))
+to receive all submission errors. Keep `submit(_:)` for older releases.
+Run submission away from the main actor.
+
+```swift
+import BackgroundTasks
+
+@concurrent
+func submitBackgroundTask(_ request: BGTaskRequest) async throws {
+    if #available(iOS 27.0, *) {
+        try await BGTaskScheduler.shared.submitTaskRequest(request)
+    } else {
+        try BGTaskScheduler.shared.submit(request)
+    }
+}
+```
+
 ## BGAppRefreshTask Patterns
 
 Short-lived tasks (~30 seconds) for fetching small data updates. The system
 decides when to launch; `earliestBeginDate` is only a lower-bound hint.
 
 ```swift
-func scheduleAppRefresh() {
+func scheduleAppRefresh() async {
     let request = BGAppRefreshTaskRequest(
         identifier: "com.example.app.refresh"
     )
     request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
     do {
-        try BGTaskScheduler.shared.submit(request)
+        try await submitBackgroundTask(request)
     } catch {
         print("Could not schedule app refresh: \(error)")
     }
 }
 
 func handleAppRefresh(task: BGAppRefreshTask) {
-    // Schedule the next refresh before doing work
-    scheduleAppRefresh()
-
     let fetchTask = Task {
+        // Schedule the next refresh before doing work.
+        await scheduleAppRefresh()
         do {
+            try Task.checkCancellation()
             let data = try await APIClient.shared.fetchLatestFeed()
+            try Task.checkCancellation()
             await FeedStore.shared.update(with: data)
-            task.setTaskCompleted(success: true)
+            task.setTaskCompleted(success: !Task.isCancelled)
         } catch {
             task.setTaskCompleted(success: false)
         }
@@ -143,7 +161,6 @@ func handleAppRefresh(task: BGAppRefreshTask) {
     // CRITICAL: Handle expiration -- system can revoke time at any moment
     task.expirationHandler = {
         fetchTask.cancel()
-        task.setTaskCompleted(success: false)
     }
 }
 ```
@@ -155,7 +172,7 @@ They run while the device is idle and can require external power; the same
 `earliestBeginDate` lower-bound rule applies.
 
 ```swift
-func scheduleProcessingTask() {
+func scheduleProcessingTask() async {
     let request = BGProcessingTaskRequest(
         identifier: "com.example.app.db-cleanup"
     )
@@ -163,20 +180,21 @@ func scheduleProcessingTask() {
     request.requiresExternalPower = true
     request.earliestBeginDate = Date(timeIntervalSinceNow: 60 * 60)
     do {
-        try BGTaskScheduler.shared.submit(request)
+        try await submitBackgroundTask(request)
     } catch {
         print("Could not schedule processing task: \(error)")
     }
 }
 
 func handleDatabaseCleanup(task: BGProcessingTask) {
-    scheduleProcessingTask()
-
     let cleanupTask = Task {
+        await scheduleProcessingTask()
         do {
+            try Task.checkCancellation()
             try await DatabaseManager.shared.purgeExpiredRecords()
+            try Task.checkCancellation()
             try await DatabaseManager.shared.rebuildIndexes()
-            task.setTaskCompleted(success: true)
+            task.setTaskCompleted(success: !Task.isCancelled)
         } catch {
             task.setTaskCompleted(success: false)
         }
@@ -184,7 +202,6 @@ func handleDatabaseCleanup(task: BGProcessingTask) {
 
     task.expirationHandler = {
         cleanupTask.cancel()
-        task.setTaskCompleted(success: false)
     }
 }
 ```
@@ -204,7 +221,7 @@ prioritizing tasks that report minimal progress first. Set `expirationHandler` f
 ```swift
 import BackgroundTasks
 
-func startExport() {
+func startExport() async {
     // Register the task handler at app launch, not here.
     // BGTaskScheduler requires registration before app launch completes.
     let jobID = UUID().uuidString
@@ -220,7 +237,7 @@ func startExport() {
     request.strategy = .queue
 
     do {
-        try BGTaskScheduler.shared.submit(request)
+        try await submitBackgroundTask(request)
     } catch {
         print("Could not submit continued processing task: \(error)")
     }
@@ -244,6 +261,9 @@ func performExport(task: BGContinuedProcessingTask) async {
         )
     }
 
+    if Task.isCancelled {
+        await PhotoExporter.shared.discardPartialExport()
+    }
     task.setTaskCompleted(success: !Task.isCancelled)
 }
 ```
@@ -372,7 +392,7 @@ UIApplication.shared.registerForRemoteNotifications()
 ```swift
 // DON'T: Submit a task whose identifier isn't in BGTaskSchedulerPermittedIdentifiers
 let request = BGAppRefreshTaskRequest(identifier: "com.example.app.refresh")
-try BGTaskScheduler.shared.submit(request)  // Throws .notPermitted
+try await submitBackgroundTask(request)  // Throws .notPermitted
 
 // DO: Add every identifier to Info.plist BGTaskSchedulerPermittedIdentifiers
 // <string>com.example.app.refresh</string>
@@ -385,8 +405,8 @@ failure, and cancellation path reports completion exactly once.
 
 ### 3. Ignoring the expiration handler
 
-Use the same canonical handler to cancel in-flight work and report failure from
-`expirationHandler`.
+Use `expirationHandler` to cancel in-flight work. Make the work cooperate
+with cancellation and report completion from one path, after it stops.
 
 ### 4. Scheduling too frequently
 
@@ -405,15 +425,14 @@ func handleRefresh(task: BGAppRefreshTask) {
 func handleRefresh(task: BGAppRefreshTask) {
     let work = Task {
         for batch in batches {
-            try Task.checkCancellation()
+            guard !Task.isCancelled else { break }
             await processBatch(batch)
             await saveBatchProgress(batch)
         }
-        task.setTaskCompleted(success: true)
+        task.setTaskCompleted(success: !Task.isCancelled)
     }
     task.expirationHandler = {
         work.cancel()
-        task.setTaskCompleted(success: false)
     }
 }
 ```

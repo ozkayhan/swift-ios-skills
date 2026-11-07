@@ -296,7 +296,7 @@ import Vision
 import CoreML
 
 let model = try MLModel(contentsOf: modelURL, configuration: config)
-let request = CoreMLRequest(model: .init(model))
+let request = try CoreMLRequest(model: .init(model: model))
 let results = try await request.perform(on: cgImage)
 
 if let classification = results.first as? ClassificationObservation {

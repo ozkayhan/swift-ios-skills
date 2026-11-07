@@ -305,6 +305,8 @@ When a token is present, CryptoTokenKit exposes its items as standard
 keychain entries. Query them using the `kSecAttrTokenID` attribute:
 
 ```swift
+import CryptoTokenKit
+import Foundation
 import Security
 
 func findTokenKey(tokenID: String) throws -> SecKey {

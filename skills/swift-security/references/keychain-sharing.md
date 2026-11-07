@@ -29,7 +29,7 @@ Keychain access groups are the sole mechanism for sharing credentials between ap
   - [Cross-platform macOS support with `kSecUseDataProtectionKeychain`](#cross-platform-macos-support-with-ksecusedataprotectionkeychain)
 - [Migrating Items Between Access Groups](#migrating-items-between-access-groups)
 - [Lifecycle Edge Cases](#lifecycle-edge-cases)
-  - [Keychain items persist after app uninstall](#keychain-items-persist-after-app-uninstall)
+  - [Keychain items can persist after app uninstall](#keychain-items-can-persist-after-app-uninstall)
   - [App transfers between teams break keychain access](#app-transfers-between-teams-break-keychain-access)
   - [Cross-developer sharing is impossible via access groups](#cross-developer-sharing-is-impossible-via-access-groups)
 - [Platform-Specific Patterns](#platform-specific-patterns)
@@ -323,41 +323,17 @@ Apple's TN3137 states the file-based keychain is **"on the road to deprecation."
 
 ## Migrating Items Between Access Groups
 
-`kSecAttrAccessGroup` is **immutable** for an existing keychain item — it cannot be changed via `SecItemUpdate`. Migration requires a read-add-delete sequence:
-
-1. **Read**: Retrieve the complete item from its original access group via `SecItemCopyMatching`.
-2. **Add**: Call `SecItemAdd` with the new `kSecAttrAccessGroup`.
-3. **Delete**: Only after `SecItemAdd` returns `errSecSuccess`, delete the original item via `SecItemDelete`.
-
-If the add operation fails, the original item remains untouched, preventing data loss. This pattern is safe because it never deletes until the new copy is confirmed.
+Use `SecItemUpdate` to move items between access groups in the data protection keychain when the migrating executable is entitled to both groups. Match the old group and the specific service or account in the query, and set the new group in the update dictionary. Check the returned status, including duplicate items at the destination. See [Apple’s SecItem guidance](https://developer.apple.com/forums/thread/724013).
 
 ---
 
 ## Lifecycle Edge Cases
 
-### Keychain items persist after app uninstall
+### Keychain items can persist after app uninstall
 
-This behavior is undocumented but has been consistent since iOS's early days. Apple attempted to delete keychain items on app removal in iOS 10.3 beta but rolled it back before release due to compatibility issues. Quinn "The Eskimo!" has warned this behavior **could change without notice**. If shared keychain items exist between App A and App B, deleting App A leaves all shared items intact for App B. Even deleting all apps in a shared group does not remove orphaned items — only a factory reset clears them reliably.
+Keychain retention after uninstall is an implementation detail. Handle both a missing item and a retained item on reinstall, and keep shared or synchronizable items out of app-local first-launch cleanup. See [Apple Developer Technical Support](https://developer.apple.com/forums/thread/36442).
 
-A common workaround for detecting fresh installs (since `UserDefaults` _are_ wiped on uninstall):
-
-```swift
-func clearKeychainOnFreshInstall() {
-    let hasLaunchedBefore = UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
-    if !hasLaunchedBefore {
-        // Scope deletion to specific service/group to avoid nuking shared items
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "com.example.authService"
-        ]
-        SecItemDelete(query as CFDictionary)
-        UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
-    }
-}
-```
-
-> For the complete versioned migration approach and fresh-install detection pattern, see `migration-legacy-stores.md` § First-Launch Keychain Cleanup.
-> Key point: The pattern above handles the basic sharing-context case; the canonical file covers multi-version migration coordination, safe deletion ordering, and CI implications.
+For an explicit per-install cleanup policy, see `migration-legacy-stores.md` § First-Launch Keychain Cleanup.
 
 ### App transfers between teams break keychain access
 
@@ -447,7 +423,7 @@ Verify that `keychain-access-groups`, `com.apple.security.application-groups`, a
 - **End-to-end encryption:** Synchronized iCloud Keychain items are encrypted end-to-end; Apple cannot decrypt them.
 - **Malicious device risk:** A device joined to the user's iCloud account could potentially access or poison synchronized keychain items. Always scope secrets minimally and validate data retrieved from shared or synchronized keychains.
 - **Over-sharing risk:** Items placed in a shared access group are readable by all apps in that group. Use the narrowest possible access group — do not share an access group across apps that do not need the same credentials.
-- **Orphaned items:** After all apps in a shared group are uninstalled, keychain items remain on-device until factory reset. Consider this when storing highly sensitive data.
+- **Orphaned items:** Uninstalling apps may leave items in the keychain. Use explicit credential revocation and narrowly scoped deletion where the app offers logout or account deletion.
 
 ---
 
@@ -490,7 +466,7 @@ Three rules prevent most issues: always include the full Team ID prefix in code 
 5. **Explicit `kSecAttrAccessGroup`** — Always specify the access group in both `SecItemAdd` and `SecItemCopyMatching` calls. Omitting it on add uses the default group (which may be unexpected); omitting it on query searches all groups (which may be slow or overly broad).
 6. **iCloud sync is opt-in** — `kSecAttrSynchronizable` defaults to `false`. Sync requires non-`ThisDeviceOnly` accessibility, and queries must include `kSecAttrSynchronizable: true` or `kSecAttrSynchronizableAny` to find synced items.
 7. **macOS data protection keychain** — Set `kSecUseDataProtectionKeychain: true` on all macOS `SecItem` calls. Without it, `kSecAttrAccessGroup` is silently ignored and the legacy file-based keychain is used.
-8. **Items persist after uninstall** — Keychain items survive app deletion. Use a `UserDefaults` flag to detect fresh installs and clean up stale items. Scope deletion carefully to avoid nuking shared items.
-9. **`kSecAttrAccessGroup` is immutable** — Moving an item between groups requires a read-add-delete sequence, not an update.
+8. **Items may persist after uninstall** — Handle missing and retained items. Apply any per-install cleanup only to the app-local credentials it owns.
+9. **Access-group moves** — Use a scoped `SecItemUpdate` when the executable has both group entitlements and uses the data protection keychain.
 10. **Verify built binary entitlements** — Use `codesign -d --entitlements :-` on the built `.app`/`.appex` to confirm entitlements, not the source `.entitlements` file. Test on physical devices; the Simulator may not surface entitlement issues.
 11. **watchOS is isolated** — The Apple Watch has a separate keychain not connected via access groups. Use iCloud Keychain sync or WatchConnectivity for cross-device credential sharing.

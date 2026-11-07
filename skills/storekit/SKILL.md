@@ -40,7 +40,7 @@ StoreKit views initiate purchases automatically. For custom controls, use
 | **Consumable** | `.consumable` | Used once, can be repurchased (gems, coins) |
 | **Non-consumable** | `.nonConsumable` | Purchased once permanently (premium unlock) |
 | **Auto-renewable** | `.autoRenewable` | Recurring billing with automatic renewal |
-| **Non-renewing** | `.nonRenewing` | Time-limited access without automatic renewal |
+| **Non-renewing** | `.nonRenewable` | Time-limited access without automatic renewal |
 
 ## Loading Products
 
@@ -155,7 +155,7 @@ class StoreManager {
         for await result in Transaction.currentEntitlements {
             if case .verified(let transaction) = result,
                transaction.revocationDate == nil {
-                if transaction.productType == .nonRenewing,
+                if transaction.productType == .nonRenewable,
                    transaction.expirationDate.map({ $0 <= .now }) ?? true {
                     continue
                 }

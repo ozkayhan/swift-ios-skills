@@ -2,8 +2,6 @@
 
 Use these patterns after choosing the iOS/iPadOS 27 `MetricManager` path or the isolated iOS 26 `MXMetricManager` compatibility path in the main skill.
 
-> **Beta-sensitive:** The iOS/iPadOS 27 examples follow Apple's current beta documentation. They have not been locally compiler-verified because Xcode 27 is unavailable. Re-check availability and signatures with the shipping SDK.
-
 ## Contents
 
 - [Durable Report Outbox](#durable-report-outbox)
@@ -82,8 +80,8 @@ func analyze(_ report: MetricReport) {
         switch result {
         case .hangTime(let value):
             recordHangTime(value, interval: report.timeRange)
-        case .scrollHitchTime(let value):
-            recordScrollHitchTime(value, interval: report.timeRange)
+        case .hitchTime(let value):
+            recordHitchTime(value, interval: report.timeRange)
         case .cpuTime(let value):
             recordCPUTime(value, interval: report.timeRange)
         case .peakMemory(let value):
@@ -94,7 +92,7 @@ func analyze(_ report: MetricReport) {
             recordExtendedLaunch(value, interval: report.timeRange)
         case .signpostInterval(let value):
             recordSignpostInterval(value, interval: report.timeRange)
-        @unknown default:
+        default:
             break // The raw encoded report remains in the outbox.
         }
     }
@@ -144,7 +142,7 @@ Load this catalog when mapping exact `MetricResult` cases into a parser or dashb
 
 | Area | `MetricResult` cases |
 |---|---|
-| Responsiveness | `hangTime`, `hitchTime`, `scrollHitchTime` |
+| Responsiveness | `hangTime`, `hitchTime` |
 | Terminations | `foregroundTermination`, `backgroundTermination` |
 | Runtime | `totalForegroundTime`, `totalBackgroundTime`, `totalBackgroundAudioTime`, `totalBackgroundLocationTime`, `locationActivityTime` |
 | CPU and memory | `cpuTime`, `cpuInstructionsCount`, `peakMemory`, `suspendedMemory` |
@@ -170,10 +168,10 @@ Recommended server-side pipeline:
 
 ## Custom Signpost Metrics
 
-Use the retained iOS 27 manager to create a log handle:
+Use the static method on `MetricManager` to create a log handle:
 
 ```swift
-let log = manager.logHandle(category: "Database")
+let log = MetricManager.logHandle(category: "Database")
 
 mxSignpost(.begin, log: log, name: "Migration")
 await migrateDatabase()

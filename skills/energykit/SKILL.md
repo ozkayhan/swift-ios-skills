@@ -8,9 +8,8 @@ description: "Query grid electricity forecasts and submit load events using Ener
 Use grid cleanliness and cost guidance to shift or reduce managed-device load.
 For managed-device insights, submit the device's real load events promptly.
 
-> **Beta-sensitive.** Core EnergyKit ships in iOS/iPadOS 26. The iOS/iPadOS 27
-> `ElectricalLoadDevice` and Home-facing LoadEvents experience are beta; re-check
-> current Apple documentation before relying on those APIs.
+Core EnergyKit ships in iOS/iPadOS 26. The `ElectricalLoadDevice` API and
+Home app LoadEvents integration are available in iOS/iPadOS 27.
 
 ## Contents
 
@@ -32,7 +31,7 @@ For managed-device insights, submit the device's real load events promptly.
 | Runtime | Load-event device API | Capabilities |
 |---|---|---|
 | iOS/iPadOS 26.x | `deviceID:` compatibility initializer | EnergyKit |
-| iOS/iPadOS 27+ beta | `ElectricalLoadDevice` with the `device:` initializer | EnergyKit; add EnergyKit LoadEvents for Home app integration |
+| iOS/iPadOS 27+ | `ElectricalLoadDevice` with the `device:` initializer | EnergyKit; add EnergyKit LoadEvents for Home app integration |
 
 All EnergyKit use requires `com.apple.developer.energykit`; enable the EnergyKit
 capability on the app target. On iOS/iPadOS 27+, add the EnergyKit LoadEvents
@@ -73,7 +72,7 @@ EnergyKit provides two main capabilities:
 | `EnergyVenue` | A physical location (home) registered for energy management |
 | `ElectricVehicleLoadEvent` | Load event for EV charger telemetry |
 | `ElectricHVACLoadEvent` | Load event for HVAC system telemetry |
-| `ElectricalLoadDevice` | iOS/iPadOS 27+ beta device identity for load events |
+| `ElectricalLoadDevice` | iOS/iPadOS 27+ device identity for load events |
 | `ElectricityInsightService` | Service for querying energy/runtime insights |
 | `ElectricityInsightRecord` | Historical energy or runtime data, optionally broken down by tariff or 26.1+ grid cleanliness |
 | `ElectricityInsightQuery` | Query for historical insight data |
@@ -251,15 +250,15 @@ func submitEVBeginEvent(
         )
     )
 
-    let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
-        stateOfCharge: 45,
-        direction: .imported,
-        power: Measurement(value: 0, unit: .kilowatts),
-        energy: Measurement(value: 0, unit: .kilowattHours)
-    )
-
     let event: ElectricVehicleLoadEvent
-    if #available(iOS 27.0, iPadOS 27.0, *) {
+    if #available(iOS 27.0, *) {
+        let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
+            stateOfCharge: 45,
+            direction: .imported,
+            power: Measurement(value: 0, unit: .kilowatts),
+            energy: Measurement(value: 0, unit: .kilowattHours),
+            performanceMetrics: nil
+        )
         let device = ElectricalLoadDevice(
             id: deviceID,
             name: deviceName,
@@ -271,6 +270,12 @@ func submitEVBeginEvent(
         )
     } else {
         // iOS/iPadOS 26 compatibility; deprecated in the iOS 27 SDK.
+        let measurement = ElectricVehicleLoadEvent.ElectricalMeasurement(
+            stateOfCharge: 45,
+            direction: .imported,
+            power: Measurement(value: 0, unit: .kilowatts),
+            energy: Measurement(value: 0, unit: .kilowattHours)
+        )
         event = ElectricVehicleLoadEvent(
             timestamp: Date(), measurement: measurement,
             session: session, deviceID: deviceID
@@ -303,7 +308,7 @@ func submitHVACEvent(
     let measurement = ElectricHVACLoadEvent.ElectricalMeasurement(stage: stage)
 
     let event: ElectricHVACLoadEvent
-    if #available(iOS 27.0, iPadOS 27.0, *) {
+    if #available(iOS 27.0, *) {
         let device = ElectricalLoadDevice(
             id: deviceID,
             name: deviceName,
@@ -385,7 +390,7 @@ func queryEnergyInsights(deviceID: String, venueID: UUID) async throws {
     for await record in stream {
         if let total = record.totalEnergy { print("Total: \(total)") }
 
-        if #available(iOS 26.1, iPadOS 26.1, *),
+        if #available(iOS 26.1, *),
            let cleaner = record.dataByGridCleanliness?.cleaner {
             print("Cleaner: \(cleaner)")
         }

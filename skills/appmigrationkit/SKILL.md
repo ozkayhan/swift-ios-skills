@@ -11,9 +11,6 @@ during device setup or onboarding. AppMigrationKit APIs are iOS 26.0+ /
 iPadOS 26.0+; the data-container entitlement is iOS 26.1+ / iPadOS 26.1+ /
 Mac Catalyst 26.1+. Swift 6.3.
 
-> **Beta-sensitive.** AppMigrationKit is new in iOS 26 and may change before GM.
-> Re-check current Apple documentation before relying on specific API details.
-
 AppMigrationKit uses an app extension model. The system orchestrates the
 transfer between devices. The app provides an extension conforming to export
 and import protocols, and the system calls that extension at the appropriate
@@ -284,7 +281,9 @@ launch:
 
 ```swift
 import AppMigrationKit
+import UIKit
 
+@MainActor
 func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -297,6 +296,8 @@ func application(
         case .failure(let error):
             showMigrationFailureUI(error: error)
             MigrationStatus.clearImportStatus()
+        @unknown default:
+            break
         }
     }
     return true

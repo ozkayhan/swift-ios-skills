@@ -71,9 +71,9 @@ For server-side identity verification, see [references/gamekit-patterns.md](refe
 tapped, it opens the Game Center dashboard. Configure it after authentication.
 
 ```swift
+@MainActor
 func configureAccessPoint() {
     GKAccessPoint.shared.location = .topLeading
-    GKAccessPoint.shared.showHighlights = true
     GKAccessPoint.shared.isActive = true
 }
 ```
@@ -102,37 +102,18 @@ GKAccessPoint.shared.trigger(state: .achievements) { }
 
 ## Dashboard
 
-Present the Game Center dashboard using `GKGameCenterViewController`. The
-presenting object must conform to `GKGameCenterControllerDelegate`.
+On iOS 26+, present the dashboard through `GKAccessPoint`. The old
+`GKGameCenterViewController` is deprecated, and the access point no longer
+supports `showHighlights`.
 
 ```swift
-final class GameViewController: UIViewController, GKGameCenterControllerDelegate {
-
-    func showDashboard() {
-        let vc = GKGameCenterViewController(state: .dashboard)
-        vc.gameCenterDelegate = self
-        present(vc, animated: true)
-    }
-
-    func showLeaderboard(_ leaderboardID: String) {
-        let vc = GKGameCenterViewController(
-            leaderboardID: leaderboardID,
-            playerScope: .global,
-            timeScope: .allTime
-        )
-        vc.gameCenterDelegate = self
-        present(vc, animated: true)
-    }
-
-    func gameCenterViewControllerDidFinish(
-        _ gameCenterViewController: GKGameCenterViewController
-    ) {
-        gameCenterViewController.dismiss(animated: true)
-    }
+@MainActor
+func showDashboard() {
+    GKAccessPoint.shared.trigger { }
 }
 ```
 
-Dashboard states include `.dashboard`, `.leaderboards`, `.achievements`, `.challenges`, `.localPlayerProfile`, and `.localPlayerFriendsList`.
+Use the specific triggers above for leaderboard and achievement destinations.
 
 ## Leaderboards
 
@@ -161,6 +142,8 @@ func loadTopScores(
     leaderboardID: String,
     count: Int = 10
 ) async throws -> (GKLeaderboard.Entry?, [GKLeaderboard.Entry]) {
+    guard (1...100).contains(count) else { return (nil, []) }
+
     let leaderboards = try await GKLeaderboard.loadLeaderboards(
         IDs: [leaderboardID]
     )
@@ -169,7 +152,7 @@ func loadTopScores(
     let (localEntry, entries, _) = try await leaderboard.loadEntries(
         for: .global,
         timeScope: .allTime,
-        range: 1...count
+        range: NSRange(location: 1, length: count)
     )
     return (localEntry, entries)
 }

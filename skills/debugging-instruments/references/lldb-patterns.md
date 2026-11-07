@@ -34,7 +34,11 @@ Complete LLDB command reference for iOS debugging. Companion to the main `debugg
 ```
 
 Use `v` as the default. Fall back to `po` when you need `debugDescription`
-or custom string output. Use `p` when you need type information.
+or custom string output. Use `p` when you need type information. If a Swift
+expression fails to import a module, run `swift-healthcheck` immediately
+after the failure to inspect import diagnostics. Swift 6.4 tracks modules
+through debug info, so use matching build artifacts and symbols.
+See [Module Tracking in Swift Debug Info](https://www.swift.org/blog/module-tracking-in-debug-info/).
 
 ### Register and Memory
 

@@ -776,17 +776,7 @@ Mutation testing introduces deliberate bugs (flipping `==` to `!=`, removing `Se
 
 ### OWASP MASTG Keychain Validation
 
-MASTG-TEST-0052 requires that sensitive data use the Keychain, not `NSUserDefaults` or `.plist` files. OWASP also documents that keychain data persists after app uninstallation — the app sandbox is wiped but keychain items remain. Standard mitigation is a fresh-install detector (see `common-anti-patterns.md`):
-
-```swift
-static func handleFreshInstall(keychain: KeychainServiceProtocol) {
-    let hasLaunched = UserDefaults.standard.bool(forKey: "has_launched")
-    if !hasLaunched {
-        try? keychain.deleteAll()
-        UserDefaults.standard.set(true, forKey: "has_launched")
-    }
-}
-```
+Verify that sensitive credentials use the Keychain. For reinstall behavior, test the app with both a retained and a missing keychain item. If the app performs per-install cleanup, verify that only the intended app-local item is deleted and that errors leave cleanup retryable. See `migration-legacy-stores.md`.
 
 ---
 

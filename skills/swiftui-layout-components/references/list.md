@@ -7,6 +7,7 @@
 - [Example: feed list with scroll-to-top](#example-feed-list-with-scroll-to-top)
 - [Example: settings-style list](#example-settings-style-list)
 - [Design choices to keep](#design-choices-to-keep)
+- [iOS 27 Reordering and Swipe Actions](#ios-27-reordering-and-swipe-actions)
 - [iOS 26 Scroll Edge Effects](#ios-26-scroll-edge-effects)
 - [Pitfalls](#pitfalls)
 
@@ -91,6 +92,18 @@ struct SettingsView: View {
   container/layout decision, not as a full animation recipe. Do not prescribe
   spring parameters, transition styles, or animation timing here; defer those
   choices to `swiftui-animation`.
+
+## iOS 27 Reordering and Swipe Actions
+
+Use `.reorderable()` on a `ForEach` and `.reorderContainer(for:)` on the
+container for built-in drag reordering in a list or grid. The callback provides
+a `ReorderDifference`; apply it to the backing collection using stable item
+IDs. Keep `.onMove` with edit mode for the existing list workflow on earlier
+systems.
+
+On iOS 27+, `.swipeActions` also works outside `List`. Add
+`.swipeActionsContainer()` to the surrounding view, such as the `ScrollView`
+around swipeable rows in a `LazyVStack`. See [What’s new in SwiftUI](https://sosumi.ai/videos/play/wwdc2026/269/).
 
 ## iOS 26 Scroll Edge Effects
 

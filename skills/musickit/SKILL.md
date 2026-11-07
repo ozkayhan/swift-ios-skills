@@ -164,17 +164,20 @@ struct MusicOfferView: View {
 `ApplicationMusicPlayer` plays Apple Music content independently from the Music app. It does not affect the system player's state.
 
 ```swift
-let player = ApplicationMusicPlayer.shared
+@MainActor let player = ApplicationMusicPlayer.shared
 
+@MainActor
 func playSong(_ song: Song) async throws {
     player.queue = [song]
     try await player.play()
 }
 
+@MainActor
 func pause() {
     player.pause()
 }
 
+@MainActor
 func skipToNext() async throws {
     try await player.skipToNextEntry()
 }
@@ -183,6 +186,7 @@ func skipToNext() async throws {
 ### Observing Playback State
 
 ```swift
+@MainActor
 func observePlayback() {
     // player.state is an @Observable property
     let state = player.state

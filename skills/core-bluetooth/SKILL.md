@@ -25,6 +25,12 @@ use this skill for direct Core Bluetooth GATT communication.
 - [Review Checklist](#review-checklist)
 - [References](#references)
 
+For distance estimates on iOS 27+, use
+[Bluetooth Channel Sounding](https://sosumi.ai/documentation/corebluetooth/measuring-distance-between-devices-using-channel-sounding)
+with compatible iPhone and Bluetooth LE peripheral hardware. Pair through
+AccessorySetupKit and connect first. Check `CBCentralManager.supports(.channelSounding)`
+only after the central reaches `.poweredOn`, and test ranging on hardware.
+
 ## Setup
 
 ### Info.plist Keys
@@ -311,6 +317,13 @@ Add `bluetooth-central` to `UIBackgroundModes`. In the background:
 
 - Scanning must specify one or more service UUIDs; `nil` scans are foreground-only
 - Scan options, including `CBCentralManagerScanOptionAllowDuplicatesKey`, have no effect
+
+On iOS 26+, Apple documents an exception: if the app has an instantiated
+`CBManager` and starts a Live Activity before entering the background, it can
+retain foreground Bluetooth privileges, including scanning without service
+UUIDs and with duplicate filtering disabled. Keep the normal background scan
+constraints for sessions without a Live Activity. See the
+[Core Bluetooth overview](https://sosumi.ai/documentation/corebluetooth).
 
 ### Background Peripheral Mode
 

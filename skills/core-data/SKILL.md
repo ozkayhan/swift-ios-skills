@@ -45,7 +45,7 @@ final class CoreDataStack: @unchecked Sendable {
             if let error { fatalError("Core Data store failed: \(error)") }
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
     }
 
     var viewContext: NSManagedObjectContext { container.viewContext }
@@ -386,7 +386,7 @@ func makeTestContainer() throws -> NSPersistentContainer {
 | Forgetting to merge batch operation results | Call `mergeChanges(fromRemoteContextSave:into:)` |
 | Calling `save()` without checking `hasChanges` | Guard with `context.hasChanges` first |
 | Using deprecated `init(concurrencyType:)` confinement type | Use `.privateQueueConcurrencyType` or `.mainQueueConcurrencyType` |
-| Not setting `mergePolicy` on `viewContext` | Set `NSMergeByPropertyObjectTrumpMergePolicy` to avoid conflict crashes |
+| Not setting `mergePolicy` on `viewContext` | Choose a deliberate `NSMergePolicy`, such as `.mergeByPropertyObjectTrump` when local property values should win |
 | Modifying fetch request on live `NSFetchedResultsController` without deleting cache | Call `deleteCache(withName:)` first or use `cacheName: nil` |
 | Batch delete ignoring Deny delete rule | Batch delete bypasses delete rules; validate manually |
 | Marking `NSManagedObject` as `@unchecked Sendable` | Do not. Pass `objectID` instead |

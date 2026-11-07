@@ -112,7 +112,7 @@ List {
 
 **iOS 26:** Apply `.scrollEdgeEffectStyle(.soft, for: .top)` for modern scroll edge effects.
 
-See [references/list.md](references/list.md) for full list patterns including feed lists with scroll-to-top.
+See [references/list.md](references/list.md) for scroll-to-top and iOS 27+ native list/grid reordering and swipe actions outside `List`.
 
 ## ScrollView
 

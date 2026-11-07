@@ -14,6 +14,7 @@
 - [Exporting for Translators (XLIFF / xcloc)](#exporting-for-translators-xliff-xcloc)
 - [String Catalog JSON Structure](#string-catalog-json-structure)
 - [Generated Localizable Symbols (Xcode 26+)](#generated-localizable-symbols-xcode-26)
+- [Agent-Assisted Translation (Xcode 27+)](#agent-assisted-translation-xcode-27)
 - [Testing Strategies](#testing-strategies)
 - [Migration from .strings / .stringsdict](#migration-from-strings-stringsdict)
 - [Best Practices](#best-practices)
@@ -378,6 +379,7 @@ Note the `"room_available"` key above: it uses `"extractionState": "manual"` and
 ### Translation states
 - `"new"` -- Xcode extracted the key but no translation exists
 - `"translated"` -- Translation provided
+- `"machine_translated"` -- Agent-generated translation in Xcode 27+
 - `"needs_review"` -- Marked for review (source string changed or manual flag)
 - `"stale"` -- Key no longer found in code (removed on next clean build)
 
@@ -455,6 +457,19 @@ Generated symbols are declared `internal`. Code in other modules cannot access t
 - **[xcstrings-tool](https://github.com/liamnichols/xcstrings-tool)**: A Swift Package Plugin that generates public constants from `.xcstrings` files — use this for heavier multi-module setups where maintaining manual wrappers becomes tedious
 
 For Swift Packages, the generated symbols use the `.module` bundle automatically. The `internal` visibility means only code within the same package target can reference them.
+
+## Agent-Assisted Translation (Xcode 27+)
+
+Enable an agent in Xcode's Intelligence settings. For a single language,
+select it in the String Catalog and choose **Generate Translations**. In the
+coding assistant you can also ask the agent to add a language and prepare the
+target's catalog. Supply terminology and strings that should stay unchanged.
+
+Review the generated strings, plurals, device variants, and placeholders before
+shipping. Xcode records them as `machine_translated` in the catalog and
+`leveraged-mt` in exported XLIFF. Test the reviewed language in the running app
+for clipping and layout regressions. See
+[Localizing your app using agents](https://sosumi.ai/documentation/xcode/localizing-your-app-using-agents).
 
 ## Testing Strategies
 

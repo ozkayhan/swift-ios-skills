@@ -67,7 +67,7 @@ import RealityKit
 
 struct ARExperienceView: View {
     var body: some View {
-        RealityView { (content: RealityViewCameraContent) in
+        RealityView { (content: inout RealityViewCameraContent) in
             if !ARWorldTrackingConfiguration.isSupported {
                 content.camera = .virtual
             }
@@ -232,6 +232,9 @@ For gesture-based entity interaction, add `CollisionComponent` for the hittable
 shape and `InputTargetComponent` for input targeting.
 
 ### Drag Gesture on Entities
+
+This 3D gesture example is for visionOS. On iOS, project the 2D SwiftUI
+location or use `RealityViewCameraContent` raycasting to place the entity.
 
 ```swift
 struct DraggableARView: View {

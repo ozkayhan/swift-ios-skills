@@ -1,6 +1,6 @@
 # Image Loading and Caching Patterns
 
-Complete patterns for efficient image handling in iOS apps, from basic AsyncImage usage through production-ready caching and loading pipelines. All patterns use modern Swift async/await and target iOS 26 with Swift 6.3, backward-compatible to iOS 16 unless noted.
+Complete patterns for efficient image handling in iOS apps, from basic AsyncImage usage through production-ready caching and loading pipelines. All patterns use modern Swift async/await and target iOS 26+ with Swift 6.4, backward-compatible to iOS 16 unless noted.
 
 ## Contents
 - AsyncImage Patterns
@@ -15,7 +15,7 @@ Complete patterns for efficient image handling in iOS apps, from basic AsyncImag
 
 ## AsyncImage Patterns
 
-AsyncImage (iOS 15+) provides built-in async image loading from a URL. Suitable for simple cases but has significant limitations for production use.
+AsyncImage (iOS 15+) provides built-in async image loading from a URL. On iOS 27+, it caches downloaded data using standard HTTP caching by default.
 
 ### Basic Usage
 
@@ -68,15 +68,14 @@ AsyncImage(url: imageURL, transaction: Transaction(animation: .easeIn(duration: 
 
 ### Limitations
 
-AsyncImage has several shortcomings for production apps:
+On iOS 27+, pass a `URLRequest` to `AsyncImage(request:scale:transaction:content:)`
+to customize the cache policy, or use `asyncImageURLSession(_:)` to provide a
+session for a view hierarchy. Use a custom loader for explicit cache control
+when supporting earlier OS versions.
 
-- **No caching across redraws**: images re-download when the view is recreated.
-- **No prefetching**: cannot load images ahead of scroll position.
-- **No custom URLSession**: uses the shared session with no cache policy control.
-- **No access to raw data**: cannot process, downsample, or persist the image data.
-- **No cancellation control**: tied entirely to the view lifecycle.
-
-For anything beyond simple, low-volume image display, use a custom loading pipeline.
+`AsyncImage` does not expose a prefetch API, the downloaded bytes for
+downsampling, or independent cancellation control. Keep a custom pipeline
+for those needs. See [AsyncImage](https://sosumi.ai/documentation/swiftui/asyncimage).
 
 ---
 

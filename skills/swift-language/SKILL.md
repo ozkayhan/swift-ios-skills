@@ -199,6 +199,9 @@ func process(items: [any StringProtocol]) {
 }
 ```
 
+Swift 6.4 accepts `some P?` and `any P?` (SE-0521). For source that must
+also compile with older toolchains, keep `(some P)?` and `(any P)?`.
+
 ### When to choose
 
 | Use `some` | Use `any` |

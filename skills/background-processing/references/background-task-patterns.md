@@ -73,7 +73,7 @@ Use `requiresExternalPower` and `requiresNetworkConnectivity` to ensure the
 system only launches your task when conditions are met:
 
 ```swift
-func scheduleSyncTask() {
+func scheduleSyncTask() async {
     let request = BGProcessingTaskRequest(
         identifier: "com.example.app.full-sync"
     )
@@ -92,7 +92,7 @@ func scheduleSyncTask() {
     }
 
     do {
-        try BGTaskScheduler.shared.submit(request)
+        try await submitBackgroundTask(request)
     } catch {
         print("Failed to schedule sync: \(error)")
     }
@@ -106,28 +106,31 @@ Design tasks to save progress so they can resume if terminated:
 ```swift
 func handleMigration(task: BGProcessingTask) {
     let work = Task {
-        let lastProcessed = UserDefaults.standard.integer(
-            forKey: "migrationLastIndex"
-        )
-        let items = try await loadItems()
-
-        for (index, item) in items.dropFirst(lastProcessed).enumerated() {
-            try Task.checkCancellation()
-            try await migrate(item)
-            // Checkpoint progress
-            UserDefaults.standard.set(
-                lastProcessed + index + 1,
+        do {
+            let lastProcessed = UserDefaults.standard.integer(
                 forKey: "migrationLastIndex"
             )
-        }
+            let items = try await loadItems()
 
-        task.setTaskCompleted(success: true)
+            for (index, item) in items.dropFirst(lastProcessed).enumerated() {
+                try Task.checkCancellation()
+                try await migrate(item)
+                // Checkpoint progress
+                UserDefaults.standard.set(
+                    lastProcessed + index + 1,
+                    forKey: "migrationLastIndex"
+                )
+            }
+
+            task.setTaskCompleted(success: !Task.isCancelled)
+        } catch {
+            task.setTaskCompleted(success: false)
+        }
     }
 
     task.expirationHandler = {
         work.cancel()
-        // Progress is saved -- next launch picks up where we left off
-        task.setTaskCompleted(success: false)
+        // The worker reports completion after saving its last checkpoint.
     }
 }
 ```
@@ -346,7 +349,7 @@ struct MyApp: App {
             .backgroundTask(.appRefresh("com.example.app.refresh")) {
                 await refreshFeed()
                 // Schedule the next one
-                scheduleAppRefresh()
+                await scheduleAppRefresh()
             }
     }
 }
@@ -387,14 +390,12 @@ is waiting). Use `.queue` for work that can start whenever the system allows.
 ### Cancellation by the User
 
 The system shows a Live Activity for continued processing tasks. The user can
-cancel the task from there. Handle this in your expiration handler:
+cancel the task from there. Cancel the worker in your expiration handler.
+Have the worker stop, clean up partial output, and report completion once.
 
 ```swift
-task.expirationHandler = {
-    // Clean up partial work
-    cleanupPartialExport()
-    task.setTaskCompleted(success: false)
-}
+let work = Task { await performExport(task: task) }
+task.expirationHandler = { work.cancel() }
 ```
 
 ### Progress Reporting

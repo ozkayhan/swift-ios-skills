@@ -736,17 +736,17 @@ func checkPermissions(_ document: PDFDocument) {
 ### Writing with Access Permissions
 
 ```swift
-func saveWithRestrictions(_ document: PDFDocument, to url: URL) {
-    let permissions: PDFAccessPermissions = [
-        .allowsLowQualityPrinting,
-        .allowsContentCopying,
-        .allowsCommenting
-    ]
-    document.write(to: url, withOptions: [
+func saveWithRestrictions(_ document: PDFDocument, to url: URL) throws {
+    let permissions = PDFAccessPermissions.allowsLowQualityPrinting.rawValue
+        | PDFAccessPermissions.allowsContentCopying.rawValue
+        | PDFAccessPermissions.allowsCommenting.rawValue
+    guard document.write(to: url, withOptions: [
         .ownerPasswordOption: "ownerSecret",
         .userPasswordOption: "userPass",
-        .accessPermissionsOption: permissions.rawValue
-    ])
+        .accessPermissionsOption: NSNumber(value: permissions)
+    ]) else {
+        throw CocoaError(.fileWriteUnknown)
+    }
 }
 ```
 

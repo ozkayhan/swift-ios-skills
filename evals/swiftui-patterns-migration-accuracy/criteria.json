@@ -14,7 +14,7 @@
     },
     {
       "name": "Clipboard modifier availability",
-      "description": "Does not recommend `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16 or iOS 26 defaults; for these command modifiers, current Apple docs list macOS 13+ and iOS/iPadOS/Mac Catalyst 27.0+ beta, so iOS 26 guidance should use `UIPasteboard`, drag/drop, or `ShareLink` instead.",
+      "description": "Does not recommend `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16 or iOS 26 defaults; for these command modifiers, current Apple docs list macOS 13+ and iOS/iPadOS/Mac Catalyst 27.0+, so iOS 26 guidance should use `UIPasteboard`, drag/drop, or `ShareLink` instead.",
       "max_score": 20
     },
     {

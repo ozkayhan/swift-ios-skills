@@ -144,7 +144,8 @@ final class AccessoryManager {
         case .invalidated:
             // Session invalidated, cannot be reused
             break
-        @unknown default:
+        default:
+            // This handler does not use picker progress or other events.
             break
         }
     }
@@ -292,6 +293,7 @@ For Wi-Fi accessories, the `ssid` on the `ASAccessory` identifies the network.
 Use `NEHotspotConfiguration` from NetworkExtension to join it:
 
 ```swift
+import AccessorySetupKit
 import NetworkExtension
 
 func handleWiFiAccessoryAdded(_ accessory: ASAccessory) {

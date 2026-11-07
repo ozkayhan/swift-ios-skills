@@ -274,14 +274,12 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 
 func segmentPerson(in cgImage: CGImage) async throws -> CIImage {
-    var request = GeneratePersonSegmentationRequest()
+    let request = GeneratePersonSegmentationRequest()
     request.qualityLevel = .accurate  // .balanced, .fast
 
     let observation = try await request.perform(on: cgImage)
-    let maskBuffer = observation.pixelBuffer
-
     let originalImage = CIImage(cgImage: cgImage)
-    let maskImage = CIImage(cvPixelBuffer: maskBuffer)
+    let maskImage = CIImage(cgImage: try observation.cgImage)
 
     // Scale mask to match original image size
     let scaleX = originalImage.extent.width / maskImage.extent.width

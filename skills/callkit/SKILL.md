@@ -45,7 +45,8 @@ registration, audio session coordination, and call directory extensions.
 
 Create a single `CXProvider` at app launch and keep it alive for the app
 lifetime. Configure it with a `CXProviderConfiguration` that describes your
-calling capabilities.
+calling capabilities. Set the app’s display name through its bundle metadata;
+`CXProviderConfiguration.localizedName` is read-only and deprecated.
 
 ```swift
 import CallKit
@@ -61,7 +62,6 @@ final class CallManager: NSObject, @unchecked Sendable {
 
     private override init() {
         let config = CXProviderConfiguration()
-        config.localizedName = "My VoIP App"
         config.supportsVideo = true
         config.maximumCallsPerCallGroup = 1
         config.maximumCallGroups = 2

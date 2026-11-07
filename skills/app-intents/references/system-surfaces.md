@@ -119,6 +119,12 @@ Do not derive or invert that value yourself. Persist the new state before
 
 Apple reference: [Creating controls to perform actions across the system](https://sosumi.ai/documentation/widgetkit/creating-controls-to-perform-actions-across-the-system)
 
+For iOS 27+ Siri integrations, use app schemas for actions and entities when
+a matching schema exists. Use [View Annotations](https://sosumi.ai/videos/play/wwdc2026/240)
+to associate visible views with their app entities when people need to refer
+to on-screen content. Verify both the association and the intent result with
+AppIntentsTesting; confirm natural language and handoff in Siri itself.
+
 ## Spotlight and IndexedEntity (iOS 18+)
 
 Conform to `IndexedEntity` for Spotlight search. On iOS 26+, use `indexingKey`

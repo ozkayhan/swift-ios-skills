@@ -1,5 +1,9 @@
 # SensorKit Extended Patterns
 
+The delegate recipes use `SRSensorReader` for iOS 26 and earlier. For iOS 27+
+recording and fetching, start with [SRReader](../SKILL.md#srreader-ios-27)
+and keep using the relevant sample and entitlement catalogs below.
+
 Overflow reference for the `sensorkit` skill. Contains delegate wiring,
 multi-sensor management, and detailed sample type usage that exceed the main
 skill file's scope.

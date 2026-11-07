@@ -11,7 +11,7 @@
         "Identifies that tracking across apps or websites requires ATT, NSUserTrackingUsageDescription, and no tracking before authorization.",
         "Checks whether third-party SDK code that collects data, uses required-reason APIs, enables data collection, or contacts tracking domains has its own privacy manifest.",
         "Warns that digital subscriptions generally require StoreKit IAP and visible subscription terms, restore purchases, and no external purchase path unless current rules or entitlements allow it.",
-        "Includes iPhone 6.9-inch and iPad 13-inch screenshot requirements for a universal iPhone/iPad app."
+        "Includes the iPhone with Dynamic Island (medium display) and iPad 13-inch screenshot requirements for a universal iPhone/iPad app."
       ]
     },
     {
@@ -36,7 +36,7 @@
         "States that keyword research, ranking strategy, and conversion optimization belong to an ASO strategy pass rather than App Review compliance.",
         "Gives App Review metadata guardrails: accurate app name, screenshots showing real UI, no misleading features, no prices in description, no competitor names or irrelevant keywords.",
         "Mentions the 30-character app name/subtitle limits and 100-character keyword field limit with comma-separated keywords and no spaces after commas.",
-        "Mentions current screenshot size compliance, including 6.9-inch iPhone and 13-inch iPad requirements when applicable.",
+        "Mentions current screenshot size compliance, including iPhone with Dynamic Island (medium display) and 13-inch iPad requirements when applicable.",
         "Does not expand into a full keyword plan or marketing copy rewrite."
       ]
     }

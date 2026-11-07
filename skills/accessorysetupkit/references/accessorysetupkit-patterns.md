@@ -550,7 +550,7 @@ final class AccessoryManager {
         case .invalidated:
             session = ASAccessorySession()
             activate()
-        @unknown default:
+        default:
             break
         }
     }

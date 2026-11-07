@@ -8,7 +8,9 @@ description: "Implement, review, or improve SwiftUI Liquid Glass effects for iOS
 Liquid Glass is the dynamic translucent material introduced across Apple platforms
 26. Standard SwiftUI bars and presentations adopt it automatically when built with
 the current SDK. Reserve custom glass for functional controls and navigation surfaces,
-not general content backgrounds.
+not general content backgrounds. Builds made with the Xcode 27 SDKs ignore
+`UIDesignRequiresCompatibility`, even with an older deployment target. Review
+standard bars and presentations using the new build. See [compatibility key](https://sosumi.ai/documentation/bundleresources/information-property-list/uidesignrequirescompatibility).
 
 See [references/liquid-glass.md](references/liquid-glass.md) for the full API reference with additional examples.
 

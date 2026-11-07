@@ -312,7 +312,7 @@ context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
 | SQLite/CoreData (no SQLCipher)             | ❌                 | ✅             | ✅ (via backup)          | ❌ Not for secrets              |
 | NSLog output                               | ❌                 | N/A            | ✅ (Console.app)         | ❌ Never log secrets            |
 
-**Keychain persistence note:** Keychain items survive app uninstall and persist across install/uninstall cycles (confirmed since iOS 10.3). Only factory reset clears them. Exception: `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` items are deleted when the passcode is removed.
+**Keychain persistence note:** Items can remain after uninstall, but retention is not an API guarantee. Handle both retained and missing items. `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly` items become unavailable when the passcode is removed. See [Apple Developer Technical Support](https://developer.apple.com/forums/thread/36442).
 
 ### MASTG Test Cases
 

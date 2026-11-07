@@ -212,6 +212,7 @@ and DOM. Conform to `WebContentExtension` to handle incoming XPC connections:
 
 ```swift
 import BrowserEngineKit
+import ExtensionFoundation
 
 @main
 struct MyWebContentExtension: WebContentExtension {
@@ -231,6 +232,7 @@ serves all tabs:
 
 ```swift
 import BrowserEngineKit
+import ExtensionFoundation
 
 @main
 struct MyNetworkingExtension: NetworkingExtension {
@@ -249,6 +251,7 @@ rendering. One instance typically serves the entire browser:
 
 ```swift
 import BrowserEngineKit
+import ExtensionFoundation
 
 @main
 struct MyRenderingExtension: RenderingExtension {
@@ -357,14 +360,18 @@ longer needs. Use the latest available revision for the strongest restrictions.
 
 ### JIT Compilation
 
-Web content extensions that JIT-compile JavaScript must transition pages with BrowserEngineKit's witnessed APIs:
+Keep the JIT write critical section in the C or C++ engine code. Inline the
+BrowserEngineCore calls there; they are unavailable directly in Swift and
+`@inlinable` does not guarantee inlining.
+See [Apple’s JIT memory protection requirements](https://sosumi.ai/documentation/browserenginekit/protecting-code-compiled-just-in-time).
 
-```swift
-import BrowserEngineCore
+```c
+#include <BrowserEngineCore/BEMemory.h>
 
-be_memory_inline_jit_restrict_rwx_to_rw_with_witness(...)
-// write generated code
-be_memory_inline_jit_restrict_rwx_to_rx_with_witness(...)
+// Inside the JIT write critical section:
+be_memory_inline_jit_restrict_rwx_to_rw_with_witness();
+// Write generated code here.
+be_memory_inline_jit_restrict_rwx_to_rx_with_witness();
 ```
 
 Requires the `com.apple.security.cs.allow-jit` and

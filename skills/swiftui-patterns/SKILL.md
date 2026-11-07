@@ -102,6 +102,11 @@ For MV pattern rationale, app wiring, and lightweight client examples, see [refe
 | `@State` (value types) | View-local simple state: toggles, counters, text field values. Always `private`. |
 | `@Binding` | Two-way connection to parent's `@State` or `@Bindable` property. |
 
+Xcode 27 implements `@State` as a macro. It lazily creates owned observable
+objects on iOS 17 and aligned releases. When supplying initial state in
+`init`, omit the inline default and initialize other stored properties first.
+See [Apple TN3211](https://sosumi.ai/documentation/technotes/tn3211-resolving-swiftui-source-incompatibilities-for-state-and-contentbuilder) for migration diagnostics.
+
 ### Ownership Pattern
 
 ```swift
@@ -299,7 +304,7 @@ Use `swift-concurrency` for cancellation handlers, debounce and clocks, `AsyncSe
 
 Route `.scrollEdgeEffectStyle`, `.backgroundExtensionEffect`, and glass controls to `swiftui-liquid-glass`; route `@Animatable` to `swiftui-animation`. `TextEditor(text: Binding<AttributedString>)` is the iOS 26 rich-text editing path. Keep availability checks beside code that adopts these APIs.
 
-Clipboard command modifiers are not iOS 26 defaults: `.copyable`, `.cuttable`, and command-based `.pasteDestination(for:action:validator:)` are macOS 13+ and iOS/iPadOS/Mac Catalyst 27 beta in current Apple docs. For iOS 26 targets, use `UIPasteboard` for custom clipboard commands, or use drag/drop and `ShareLink` for `Transferable` flows. See [references/platform-and-sharing.md](references/platform-and-sharing.md).
+Clipboard command modifiers are not iOS 26 defaults: `.copyable`, `.cuttable`, and command-based `.pasteDestination(for:action:validator:)` are macOS 13+ and iOS/iPadOS/Mac Catalyst 27+ in current Apple docs. For iOS 26 targets, use `UIPasteboard` for custom clipboard commands, or use drag/drop and `ShareLink` for `Transferable` flows. See [references/platform-and-sharing.md](references/platform-and-sharing.md).
 
 ## Performance Guidelines
 
@@ -360,7 +365,7 @@ TextField("Search…", text: $query)
 13. **Putting `@AppStorage` inside an `@Observable` class.** `@AppStorage` is a view `DynamicProperty`; keep it in a `View`, or expose a normal observed property backed by `UserDefaults` in the model.
 
 14. Hard-coding `spacing:` on every stack -- omit it to get adaptive platform spacing; only specify when the value is intentional
-15. Treating `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16/iOS 26 APIs -- they are macOS 13+ and iOS/iPadOS/Mac Catalyst 27 beta in current Apple docs. Use `UIPasteboard`, drag/drop, or `ShareLink` for iOS 26 targets.
+15. Treating `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16/iOS 26 APIs -- they are macOS 13+ and iOS/iPadOS/Mac Catalyst 27+ in current Apple docs. Use `UIPasteboard`, drag/drop, or `ShareLink` for iOS 26 targets.
 16. Treating modern defaults as formal deprecations -- `#Preview` is the modern preview default, but `PreviewProvider` is legacy rather than compiler-deprecated. `EditButton`, `.onDelete`, and `.onMove` remain valid for edit-mode list workflows; use `.swipeActions` for contextual row actions.
 17. Making a required dependency optional to stop a preview crash -- install deterministic preview dependencies instead, without live networking, authentication, production databases, or global singletons
 

@@ -31,13 +31,13 @@ Docs: [AVMediaCharacteristic](https://sosumi.ai/documentation/avfoundation/avmed
 import AVFoundation
 
 let asset = AVURLAsset(url: videoURL)
-let group = try await asset.load(.mediaSelectionGroup(forMediaCharacteristic: .legible))
+let group = try await asset.loadMediaSelectionGroup(for: .legible)
 
 if let group {
     // Find the closed caption option
     let ccOptions = AVMediaSelectionGroup.mediaSelectionOptions(
         from: group.options,
-        with: .transcribesSpokenDialogForAccessibility
+        withMediaCharacteristics: [.transcribesSpokenDialogForAccessibility]
     )
 
     if let ccOption = ccOptions.first {
@@ -50,12 +50,12 @@ if let group {
 ### Audio Descriptions
 
 ```swift
-let adGroup = try await asset.load(.mediaSelectionGroup(forMediaCharacteristic: .audible))
+let adGroup = try await asset.loadMediaSelectionGroup(for: .audible)
 
 if let adGroup {
     let adOptions = AVMediaSelectionGroup.mediaSelectionOptions(
         from: adGroup.options,
-        with: .describesVideoForAccessibility
+        withMediaCharacteristics: [.describesVideoForAccessibility]
     )
 
     if let adOption = adOptions.first {

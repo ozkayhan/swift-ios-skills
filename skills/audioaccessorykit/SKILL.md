@@ -11,9 +11,6 @@ accessory configuration with the system, and app extensions to report placement
 and connected source changes that help the system switch audio output.
 Available iOS 26.4+ / iPadOS 26.4+.
 
-> **Beta-sensitive.** AudioAccessoryKit is new in iOS 26.4. Re-check current
-> Apple documentation before relying on specific API details.
-
 AudioAccessoryKit builds on top of AccessorySetupKit. The accessory must first
 be paired via AccessorySetupKit before it can be registered for audio features.
 The central type is `AccessoryControlDevice`, which registers a
@@ -53,8 +50,8 @@ import AudioAccessoryKit
 | iOS | 26.4+ |
 | iPadOS | 26.4+ |
 
-In the current Xcode 26.6 toolchain, AudioAccessoryKit is present in the device
-SDK but not the iPhone Simulator 26.5 SDK. Use a physical-device destination
+AudioAccessoryKit is present in the iOS device SDK and absent from the iPhone
+Simulator SDK in Xcode 27.2. Use a physical-device destination
 for this target. If the rest of the app must build for Simulator, isolate target
 membership or guard the import and implementation with
 `#if canImport(AudioAccessoryKit)` and provide a simulator stub.

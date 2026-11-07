@@ -19,14 +19,14 @@
       "id": 1,
       "name": "swift63-interop-attributes",
       "prompt": "Correct this Swift 6.3 interoperability/performance note for a team wiki. The draft says: `@c func export(_ bytes: UnsafeBufferPointer<UInt8>) -> Int32` is valid C export syntax, `@specialize` is the official function-specialization attribute, `@inline(always)` is just a hint, and module selectors are written `ModuleName.symbol`.\n\nGive a corrected note with minimal Swift examples.",
-      "expected_output": "A source-grounded correction that uses a C-compatible @c signature, names @specialized as the official explicit-specialization attribute, treats @inline(always) as a guaranteed inlining request that can fail when impossible, and uses ModuleName::symbol module selectors.",
+      "expected_output": "A source-grounded correction that uses a C-compatible @c signature, names @specialized as the official explicit-specialization attribute, treats @inline(always) as a guaranteed inlining request that can fail when impossible, and gates ModuleName::symbol module selectors on Swift 6.4.",
       "files": [],
       "assertions": [
         "Rejects `UnsafeBufferPointer<UInt8>` in an `@c` exported function signature because it is a Swift struct, not a C-representable parameter.",
         "Shows an `@c` example using C-compatible pointer and scalar types, optionally with a custom C symbol name.",
         "Uses `@specialized`, not `@specialize`, for explicit specialization.",
         "States that Swift 6.3 `@inline(always)` guarantees inlining for direct calls and can produce an error when inlining is impossible.",
-        "Uses `ModuleName::symbol` syntax for module selectors."
+        "Uses `ModuleName::symbol` syntax for module selectors and states it requires Swift 6.4."
       ]
     },
     {

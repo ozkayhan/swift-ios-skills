@@ -116,6 +116,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 ## Full UNUserNotificationCenterDelegate
 
 ```swift
+import UserNotifications
+
 @MainActor
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationDelegate()
@@ -125,15 +127,14 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     /// Called when a notification arrives while the app is in the foreground.
     /// Return which presentation options to use. Without this method,
     /// foreground notifications are silently suppressed.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        let userInfo = notification.request.content.userInfo
+        let chatId = notification.request.content.userInfo["chatId"] as? String
 
         // Example: suppress banner for the chat screen the user is already viewing
-        if let chatId = userInfo["chatId"] as? String,
-           NavigationState.shared.currentChatId == chatId {
+        if let chatId, await NavigationState.shared.currentChatId == chatId {
             // Still update badge/list but do not show a banner
             return [.badge, .list, .sound]
         }
@@ -142,16 +143,20 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// Called when the user taps the notification or a notification action button.
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
         let userInfo = response.notification.request.content.userInfo
         let categoryIdentifier = response.notification.request.content.categoryIdentifier
+        let chatId = userInfo["chatId"] as? String
+        let workoutId = userInfo["workoutId"] as? String
+        let messageId = userInfo["messageId"] as? String
+        let replyText = (response as? UNTextInputNotificationResponse)?.userText
 
         switch response.actionIdentifier {
         case UNNotificationDefaultActionIdentifier:
-            await routeNotificationTap(category: categoryIdentifier, userInfo: userInfo)
+            await routeNotificationTap(category: categoryIdentifier, chatId: chatId, workoutId: workoutId)
 
         case UNNotificationDismissActionIdentifier:
             // User swiped away the notification. Only fires if the category
@@ -163,8 +168,9 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
             await handleAction(
                 response.actionIdentifier,
                 category: categoryIdentifier,
-                response: response,
-                userInfo: userInfo
+                chatId: chatId,
+                messageId: messageId,
+                replyText: replyText
             )
         }
     }
@@ -173,15 +179,16 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     private func routeNotificationTap(
         category: String,
-        userInfo: [AnyHashable: Any]
-    ) async {
+        chatId: String?,
+        workoutId: String?
+    ) {
         switch category {
         case "MESSAGE_CATEGORY":
-            guard let chatId = userInfo["chatId"] as? String else { return }
+            guard let chatId else { return }
             DeepLinkRouter.shared.navigate(to: .chat(id: chatId))
 
         case "WORKOUT_CATEGORY":
-            guard let workoutId = userInfo["workoutId"] as? String else { return }
+            guard let workoutId else { return }
             DeepLinkRouter.shared.navigate(to: .workout(id: workoutId))
 
         default:
@@ -193,24 +200,24 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     private func handleAction(
         _ actionIdentifier: String,
         category: String,
-        response: UNNotificationResponse,
-        userInfo: [AnyHashable: Any]
+        chatId: String?,
+        messageId: String?,
+        replyText: String?
     ) async {
         switch (category, actionIdentifier) {
         case ("MESSAGE_CATEGORY", "REPLY_ACTION"):
-            guard let textResponse = response as? UNTextInputNotificationResponse,
-                  let chatId = userInfo["chatId"] as? String else { return }
+            guard let replyText, let chatId else { return }
             await MessageService.shared.sendReply(
-                text: textResponse.userText,
+                text: replyText,
                 chatId: chatId
             )
 
         case ("MESSAGE_CATEGORY", "LIKE_ACTION"):
-            guard let messageId = userInfo["messageId"] as? String else { return }
+            guard let messageId else { return }
             await MessageService.shared.likeMessage(id: messageId)
 
         case ("MESSAGE_CATEGORY", "MARK_READ_ACTION"):
-            guard let chatId = userInfo["chatId"] as? String else { return }
+            guard let chatId else { return }
             await MessageService.shared.markAsRead(chatId: chatId)
 
         default:

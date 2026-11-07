@@ -183,6 +183,8 @@ flow, the system does not deliver a `PermissionResponse` for that question.
 ```swift
 import PermissionKit
 
+@available(iOS 26.2, *)
+@MainActor
 func requestPermission(
     for question: PermissionQuestion<CommunicationTopic>,
     in viewController: UIViewController
@@ -211,6 +213,8 @@ func requestPermission(
         @unknown default:
             break
         }
+    } catch {
+        print("Permission request failed: \(error)")
     }
 }
 ```

@@ -19,7 +19,7 @@
     },
     {
       "name": "Screenshot compliance",
-      "description": "Mentions current screenshot-size compliance, including 6.9-inch iPhone screenshots and 13-inch iPad screenshots when applicable.",
+      "description": "Mentions current screenshot-size compliance, including iPhone with Dynamic Island (medium display) screenshots and 13-inch iPad screenshots when applicable.",
       "max_score": 20
     },
     {

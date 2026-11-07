@@ -1,7 +1,7 @@
 # Foundation Models API Reference
 
-Complete reference for Apple's Foundation Models framework (iOS 26+ / macOS 26+).
-On-device language model optimized for Apple Silicon. No app-managed API key,
+Apple's Foundation Models framework (iOS 26+ / macOS 26+), focusing on the
+on-device `SystemLanguageModel` optimized for Apple Silicon. No app-managed API key,
 model hosting, or network round trip for generation; still handle Apple
 Intelligence and system model asset availability.
 
@@ -36,9 +36,17 @@ Intelligence and system model asset availability.
 
 ### SystemLanguageModel Properties
 
-- `contextSize`: Returns the model's maximum context window in tokens
+- `contextSize` (iOS 26.4+ / macOS 26.4+): Returns the model's maximum context window in tokens
 - `supportedLanguages`: `Set<Locale.Language>` values the model supports
 - `supportsLocale(_ locale: Locale) -> Bool`: Preferred locale check before generating because it accounts for fallbacks
+
+On iOS 27 and macOS 27, test existing prompts again: the default on-device
+model has changed. For image input or a session that changes its model, tools,
+or instructions as a task progresses, use the iOS 27+ `DynamicProfile` API.
+`LanguageModel` also accepts other providers, including Private Cloud Compute.
+Keep `SystemLanguageModel` for local-only data; verify the eligibility and
+data-handling requirements before using any server-backed model.
+See [Foundation Models updates](https://sosumi.ai/documentation/updates/foundationmodels).
 
 ## Availability Checking
 
@@ -60,15 +68,20 @@ case .available:
         // Route to fallback UI before generating
         break
     }
-    // Proceed with model usage
+    // Proceed with model usage using the selected locale.
+    print(locale.identifier)
 case .unavailable(.appleIntelligenceNotEnabled):
     // Guide user to Settings > Apple Intelligence
+    break
 case .unavailable(.modelNotReady):
     // System model assets are downloading or unavailable for other system reasons
+    break
 case .unavailable(.deviceNotEligible):
     // Device cannot run Apple Intelligence
+    break
 default:
     // Graceful fallback for unknown or future unavailable reasons
+    break
 }
 ```
 
@@ -335,7 +348,9 @@ let response = try await session.respond(to: "What's the weather in Tokyo?")
 - Use model-autonomous tools for dynamic lookups where the model can decide
   whether more app data is needed
 - Frame tool results as authorized user data to prevent refusals
-- The model calls tools autonomously; you cannot force tool invocation
+- By default the model decides whether to call tools. On iOS 27+ / macOS
+  27+, use `GenerationOptions.ToolCallingMode` when a request must control
+  tool selection.
 
 ### Tool Protocol Details
 
@@ -456,8 +471,8 @@ try SystemLanguageModel.Adapter.removeObsoleteAdapters()
 
 When conversations grow long:
 
-1. Monitor token usage against `SystemLanguageModel.default.contextSize`
-2. Use `SystemLanguageModel.default.tokenCount(for:)` to estimate usage
+1. On iOS 26.4+ / macOS 26.4+, monitor usage against `SystemLanguageModel.default.contextSize`
+2. Use `try await SystemLanguageModel.default.tokenCount(for:)` on those releases to measure input
 3. Summarize earlier turns into new session instructions
 4. Create fresh sessions with summary context rather than overflowing
 

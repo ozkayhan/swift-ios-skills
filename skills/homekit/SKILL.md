@@ -90,7 +90,6 @@ final class HomeStore: NSObject, HMHomeManagerDelegate {
     func homeManagerDidUpdateHomes(_ manager: HMHomeManager) {
         // Safe to access manager.homes now
         let homes = manager.homes
-        let primaryHome = manager.primaryHome
         print("Loaded \(homes.count) homes")
     }
 
@@ -108,7 +107,7 @@ final class HomeStore: NSObject, HMHomeManagerDelegate {
 ### Accessing Rooms
 
 ```swift
-guard let home = homeManager.primaryHome else { return }
+guard let home = homeManager.homes.first(where: { $0.uniqueIdentifier == selectedHomeID }) else { return }
 
 let rooms = home.rooms
 let kitchen = rooms.first { $0.name == "Kitchen" }
@@ -167,13 +166,9 @@ home.assignAccessory(accessory, to: bedroom) { error in
 ### Reading a Value
 
 ```swift
-let characteristic: HMCharacteristic = // obtained from a service
-
-characteristic.readValue { error in
-    guard error == nil else { return }
-    if let value = characteristic.value as? Bool {
-        print("Power state: \(value)")
-    }
+func readPowerState(_ characteristic: HMCharacteristic) async throws -> Bool? {
+    try await characteristic.readValue()
+    return characteristic.value as? Bool
 }
 ```
 

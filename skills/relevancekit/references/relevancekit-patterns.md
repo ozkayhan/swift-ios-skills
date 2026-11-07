@@ -730,7 +730,7 @@ func locationRelevanceForCategory(
 }
 
 // Usage
-let categories: [MKPointOfInterestCategory] = [.cafe, .restaurant, .grocery]
+let categories: [MKPointOfInterestCategory] = [.cafe, .restaurant, .foodMarket]
 let attributes = categories.compactMap { category in
     locationRelevanceForCategory(category, intent: FoodIntent())
 }

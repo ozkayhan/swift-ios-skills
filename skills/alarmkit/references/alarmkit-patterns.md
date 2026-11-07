@@ -129,7 +129,7 @@ Observable pattern for centralized authorization management.
 
 ```swift
 import AlarmKit
-import Observation
+import SwiftUI
 
 @Observable
 @MainActor
@@ -189,7 +189,7 @@ Pattern for tracking all alarms and reacting to state changes.
 
 ```swift
 import AlarmKit
-import Observation
+import SwiftUI
 
 @Observable
 @MainActor

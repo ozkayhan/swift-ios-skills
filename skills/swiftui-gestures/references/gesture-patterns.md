@@ -117,7 +117,7 @@ struct RotateScaleView: View {
 
 ## Drag-to-Reorder
 
-Drag gesture with haptic feedback for list reordering:
+Use native `.reorderable()` with `.reorderContainer(for:)` for standard list or grid reordering on iOS 27+. Keep `.onMove` for edit-mode lists on earlier releases. Use a custom gesture when you need a distinct interaction, such as long-press pickup with custom feedback.
 
 ```swift
 struct ReorderableList: View {
