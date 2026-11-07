@@ -233,9 +233,11 @@ func sendDataToRemote(_ data: Data) async throws {
   devices. Remove that entry only when HealthKit is optional and the app has a
   useful non-HealthKit mode.
 - `authorizationStatus(for:)` is for write/share authorization. HealthKit does
-  not reveal whether read access was granted or denied. If read access is
+  not provide a general read-authorization status. If read access is
   denied, queries return samples your app saved successfully, which can look
-  like partial or empty data.
+  like partial or empty data. On iOS 27+, check `earliestAuthorizedSampleDate(for:)`
+  per type before computing historical trends. Data before a returned boundary
+  is unknown, and an omitted type does not establish full read access.
 - People can change HealthKit permissions later in Settings or the Health app.
   Refresh permission-sensitive UI and write paths instead of assuming the
   original authorization outcome still applies.

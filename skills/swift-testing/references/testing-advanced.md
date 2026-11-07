@@ -8,6 +8,7 @@ Warning-severity issues, programmatic test cancellation, and image attachments f
 - [Programmatic Test Cancellation](#programmatic-test-cancellation)
 - [Exit Test Value Capturing](#exit-test-value-capturing)
 - [Image Attachments](#image-attachments)
+- [Swift 6.4 Attachments and Repetition](#swift-64-attachments-and-repetition)
 - [Version Gates](#version-gates)
 - [Proposal Reference](#proposal-reference)
 
@@ -81,7 +82,7 @@ ST-0014 adds image attachments in Swift 6.3 / Xcode 26.4 and newer. Import both 
 import Testing
 import UIKit
 
-@Test func renderedOutput() async throws {
+@MainActor @Test func renderedOutput() async throws {
     let view = ChartView(data: sampleData)
     let renderer = UIGraphicsImageRenderer(size: CGSize(width: 400, height: 300))
     let image = renderer.image { ctx in
@@ -99,6 +100,23 @@ Supported Apple-platform image types include:
 - `CIImage` when importing CoreImage
 - `NSImage` on macOS when importing AppKit
 
+## Swift 6.4 Attachments and Repetition
+
+On Apple platforms, create an attachment from a `Transferable` value with
+`try await Attachment(exporting: value, as: .pdf, named: "report.pdf")`
+and pass the result to `Attachment.record`. Import `Testing` and
+`CoreTransferable`. Specify a content type the value can export, or omit
+`as:` to use its first data-compatible export representation.
+
+Use SwiftPM’s repetition options to investigate intermittent Swift Testing
+failures:
+
+```sh
+swift test --filter renderedOutput --maximum-repetitions 20 --repeat-until fail
+```
+
+See [Swift 6.4 release notes](https://www.swift.org/blog/swift-6.4-released/).
+
 ## Version Gates
 
 | Feature | Minimum toolchain / platform |
@@ -109,6 +127,8 @@ Supported Apple-platform image types include:
 | `Issue.record(_:severity:)` warnings | Swift 6.3 / Xcode 26.4 |
 | `Test.cancel(_:)` | Swift 6.3 / Xcode 26.4 |
 | Image attachment recording | Swift 6.3 / Xcode 26.4 |
+| Transferable attachments | Swift 6.4 / Xcode 27; Apple platforms |
+| SwiftPM test repetitions | Swift 6.4; Swift Testing suites |
 
 Do not use exit tests for iOS, tvOS, or watchOS runtime targets. For iOS app code that needs fatal-path coverage, move the exit behavior behind a smaller pure Swift API, test the non-exiting branches directly, and reserve exit tests for a supported host/tool target.
 

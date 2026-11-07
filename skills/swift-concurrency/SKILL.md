@@ -6,7 +6,7 @@ description: "Resolve Swift concurrency compiler errors, adopt approachable conc
 # Swift Concurrency
 
 Review, fix, and write concurrent Swift code targeting Swift 6.3+. Gate Swift
-6.4 / Xcode 27 beta cleanup APIs behind explicit toolchain and availability
+6.4 / Xcode 27 cleanup APIs behind explicit toolchain and availability
 checks. Apply actor isolation, Sendable safety, and modern concurrency patterns
 with minimal behavior changes.
 
@@ -339,7 +339,7 @@ try await withThrowingTaskGroup(of: Item.self) { group in
   `try Task.checkCancellation()` in loops.
 - Use `.task` modifier in SwiftUI -- it handles cancellation on view disappear.
 - Use `withTaskCancellationHandler` for cleanup.
-- Swift 6.4 / iOS 27+ beta: use `withTaskCancellationShield` only for short
+- Swift 6.4 / iOS 27+: use `withTaskCancellationShield` only for short
   cleanup or rollback that must complete after cancellation. Inside the shield,
   `Task.isCancelled` is false and `Task.checkCancellation()` does not throw;
   cancellation is observable again after the scope exits.

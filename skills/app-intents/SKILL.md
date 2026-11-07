@@ -60,7 +60,7 @@ Then choose the system feature and protocol that fit that action:
 
 - Build and run in the target system surface to confirm discovery, parameter resolution, cancellation, confirmation, authentication, result rendering, and app handoff.
 - If a step fails, reset the fixture, fix the smallest intent/entity/query boundary, and rerun the same action from the same surface before adding another action.
-- Test Siri phrases with the intent preview in Xcode.
+- Test Siri phrases on the target system. On iOS 27+, use [AppIntentsTesting](https://sosumi.ai/documentation/appintentstesting/testing-your-app-intents-code) in a UI test target to run intents and queries out of process through the system, then verify Siri phrasing and presentation separately.
 - Confirm `IndexedEntity` instances are indexed in a named Spotlight index.
 - Check widget configuration for `WidgetConfigurationIntent` intents.
 
@@ -88,8 +88,10 @@ struct OrderSoupIntent: AppIntent {
 }
 ```
 
-Optional members: `description` (`IntentDescription`), `openAppWhenRun` (`Bool`),
-`isDiscoverable` (`Bool`), `authenticationPolicy` (`IntentAuthenticationPolicy`).
+Optional members include `description`, `isDiscoverable`, and
+`authenticationPolicy`. On iOS 26+, use [`supportedModes`](https://sosumi.ai/documentation/appintents/appintent/supportedmodes)
+to specify background and foreground execution. Use `openAppWhenRun` only
+for compatibility with earlier releases; it is deprecated on iOS 26.
 
 ## `@Parameter`
 

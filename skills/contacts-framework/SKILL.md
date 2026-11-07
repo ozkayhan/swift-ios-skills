@@ -256,7 +256,8 @@ struct ContactPicker: UIViewControllerRepresentable {
         Coordinator(self)
     }
 
-    final class Coordinator: NSObject, CNContactPickerDelegate {
+    @MainActor
+    final class Coordinator: NSObject, @preconcurrency CNContactPickerDelegate {
         let parent: ContactPicker
 
         init(_ parent: ContactPicker) {

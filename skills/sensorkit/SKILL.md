@@ -5,7 +5,7 @@ description: "Access research-grade sensor data using SensorKit for approved stu
 
 # SensorKit
 
-Choose the exact `SRSensor` and verify its individual availability. Use
+Choose the exact research sensor and verify its individual availability. Use
 CoreMotion for ordinary motion/activity features and HealthKit for health
 records and workouts.
 
@@ -14,6 +14,7 @@ records and workouts.
 - [Overview and Requirements](#overview-and-requirements)
 - [Entitlements](#entitlements)
 - [Info.plist Configuration](#infoplist-configuration)
+- [SRReader (iOS 27+)](#srreader-ios-27)
 - [Authorization](#authorization)
 - [Available Sensors](#available-sensors)
 - [SRSensorReader](#srsensorreader)
@@ -103,7 +104,51 @@ Use the exact usage-detail dictionary for each requested sensor. Load the
 [Entitlement and Usage-Detail Catalog](references/sensorkit-patterns.md#entitlement-and-usage-detail-catalog)
 when mapping sensors beyond the motion and ambient-light examples above.
 
+## SRReader (iOS 27+)
+
+Prefer the typed `SRReader<Sensor>` on iOS 27+. Request authorization with
+`SRAuthorizationStatus.requestAuthorization(for:)`, start recording at the
+start of the study period, and fetch eligible windows separately. Keep the
+reader and reuse it for that sensor.
+
+```swift
+import SensorKit
+
+@available(iOS 27.0, *)
+func startAmbientLightRecording() async throws -> SRReader<SRAmbientLightSensor>? {
+    let sensor = SRAmbientLightSensor.ambientLight
+    let reader = try SRReader(sensor: sensor)
+    try await SRAuthorizationStatus.requestAuthorization(for: [sensor])
+    guard reader.authorizationStatus == .authorized else { return nil }
+    try await reader.startRecording()
+    return reader
+}
+
+@available(iOS 27.0, *)
+func readAmbientLight(
+    using reader: SRReader<SRAmbientLightSensor>,
+    matching request: SRFetchRequest
+) async throws {
+    for try await result in reader.samples(matching: request) {
+        switch result.sample {
+        case .success(let sample):
+            print(sample.lux)
+        case .failure(let error):
+            print("Could not read sample: \(error)")
+        }
+    }
+}
+```
+
+Use `try await reader.devices` for device selection and
+`try await reader.stopRecording()` when collection ends. Handle per-sample
+failures separately from errors that end the sequence. The study approval,
+entitlements, authorization, and holding period still apply.
+
 ## Authorization
+
+The following authorization, delegate, and recording examples use the
+deprecated `SRSensorReader` for iOS 26 and earlier compatibility.
 
 Request authorization for the sensors your study needs. The system shows the
 Research Sensor & Usage Data sheet on first request.
@@ -356,6 +401,8 @@ for the complete switch and callback wiring.
 - [ ] `sensorReader(_:fetching:didFetchResult:)` returns `true` to continue or `false` to stop
 
 ## References
+
+- [SRReader](https://sosumi.ai/documentation/sensorkit/srreader)
 
 - Extended patterns (delegate wiring, multi-sensor manager, sample type details): [references/sensorkit-patterns.md](references/sensorkit-patterns.md)
 - [SensorKit framework](https://sosumi.ai/documentation/sensorkit)

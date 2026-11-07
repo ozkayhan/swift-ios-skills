@@ -7,8 +7,6 @@ description: Use when collecting or analyzing production iOS or iPadOS performan
 
 Use MetricKit for low-overhead production telemetry that complements local Instruments and Xcode Organizer analysis. On iOS and iPadOS 27, prefer the Swift-first `MetricManager` report sequences. Keep `MXMetricManager` only in an explicit iOS 26 compatibility branch.
 
-> **Beta-sensitive:** The iOS/iPadOS 27 surface below is based on Apple's current beta documentation. It has not been locally compiler-verified because Xcode 27 is unavailable in this environment. Re-check the linked Apple documentation and compile with the shipping Xcode 27 SDK before release.
-
 Load [MetricKit Extended and Compatibility Patterns](references/metrickit-patterns.md) when implementing durable ingestion, detailed report analysis, or the iOS 26 compatibility path.
 
 ## Contents
@@ -103,13 +101,13 @@ for result in entry.values {
         analyzeLaunch(metric)
     case .signpostInterval(let metric):
         analyzeSignpost(metric)
-    @unknown default:
-        preserveUnknownMetric(result)
+    default:
+        break // Other metrics remain in the stored report.
     }
 }
 ```
 
-Use `@unknown default` so a beta or future result does not make the ingestion pipeline brittle. Preserve the raw encoded report even when the current app does not understand a result.
+Use `default` when intentionally handling only a subset of known metric cases. Use `@unknown default` when handling every known diagnostic case. Preserve the raw encoded report even when the current app does not understand a result.
 
 ## Receiving Diagnostic Reports
 
@@ -171,10 +169,10 @@ Store the complete diagnostic report before flattening or symbolication. Preserv
 
 ## Custom Signpost Metrics
 
-Create an OS log through the manager, then use `mxSignpost` for begin/end measurement:
+Create an OS log with the static `MetricManager.logHandle(category:)` method, then use `mxSignpost` for begin/end measurement:
 
 ```swift
-let log = manager.logHandle(category: "ImagePipeline")
+let log = MetricManager.logHandle(category: "ImagePipeline")
 
 mxSignpost(.begin, log: log, name: "Decode")
 await decodeImage()
@@ -251,7 +249,6 @@ Do not expect development-device runs to reproduce the population, cadence, or a
 | Diagnose retained objects or memory graph paths | `ios-memgraph-analysis` |
 | Tune SwiftUI invalidation, identity, or scrolling code | `swiftui-performance` |
 | Study structured EnergyKit impact data | `energykit` |
-| Design general logging and os_signpost strategy | `swift-logging` |
 
 MetricKit identifies production symptoms and trends. Route the actual code fix to the skill that owns the affected subsystem.
 
@@ -262,8 +259,8 @@ MetricKit identifies production symptoms and trends. Route the actual code fix t
 | Uploading directly in the sequence loop | Encode and enqueue locally first; upload asynchronously later. |
 | Assuming every diagnostic event produces a report | Treat diagnostics as sampled, system-produced evidence. |
 | Looking for `pastPayloads` on `MetricManager` | Keep legacy backfill only in the iOS 26 `MXMetricManager` branch. |
-| Parsing only known enum cases | Preserve the raw report and use `@unknown default`. |
-| Using `MXMetricManager.makeLogHandle` in the iOS 27 branch | Use `manager.logHandle(category:)`. |
+| Dropping cases the parser does not handle | Preserve the raw report. Use `default` for a subset of metrics and `@unknown default` after all known diagnostic cases. |
+| Using `MXMetricManager.makeLogHandle` in the iOS 27 branch | Use `MetricManager.logHandle(category:)`. |
 | Using paired extend/finish launch calls in the iOS 27 branch | Use `trackLaunchTask`. |
 | Treating MetricKit aggregates as local traces | Reproduce with Instruments and signposts. |
 
@@ -271,14 +268,13 @@ MetricKit identifies production symptoms and trends. Route the actual code fix t
 
 - [ ] The iOS 27 branch starts at launch with one retained `MetricManager` and one consumer per report sequence.
 - [ ] Every report is encoded and durably enqueued before analysis or upload.
-- [ ] Diagnostic and metric switches use `@unknown default`.
+- [ ] Metric subsets use `default`; exhaustive diagnostic switches use `@unknown default`.
 - [ ] Unknown raw reports remain recoverable.
 - [ ] Symbolication metadata and matching dSYMs are retained.
-- [ ] Custom intervals use `manager.logHandle(category:)` and `mxSignpost`.
+- [ ] Custom intervals use `MetricManager.logHandle(category:)` and `mxSignpost`.
 - [ ] Extended launch work uses `trackLaunchTask`.
 - [ ] The iOS 26 `MXMetricManager` path is isolated behind availability checks.
 - [ ] Production aggregates lead to a local Instruments investigation when appropriate.
-- [ ] iOS 27 beta APIs have been rechecked and compiled with the shipping Xcode 27 SDK.
 
 ## References
 

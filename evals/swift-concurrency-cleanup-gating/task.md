@@ -10,8 +10,7 @@ A team on Swift 6.3 / Xcode 26.5 wants to update its cleanup code by:
   `nonisolated(nonsending)` async parameter.
 
 Review the plan and give the smallest source-grounded correction that preserves
-Swift 6.3 behavior while identifying what can wait for Swift 6.4 / Xcode 27
-beta.
+Swift 6.3 behavior while identifying what requires Swift 6.4 / Xcode 27.
 
 ## Output Specification
 

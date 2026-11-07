@@ -83,8 +83,10 @@ final class CameraManager: NSObject {
         }
         session.addOutput(photoOutput)
 
-        // Enable maximum quality (iOS 16+)
-        if let maxDimensions = photoOutput.maxPhotoDimensions(for: .photo) {
+        // Pick dimensions supported by the active format (iOS 16+).
+        if let maxDimensions = device.activeFormat.supportedMaxPhotoDimensions.max(by: {
+            Int64($0.width) * Int64($0.height) < Int64($1.width) * Int64($1.height)
+        }) {
             photoOutput.maxPhotoDimensions = maxDimensions
         }
         photoOutput.maxPhotoQualityPrioritization = .quality
@@ -670,72 +672,53 @@ Set `metadataObjectTypes` after adding the output to the session. Setting types 
 
 ## 8. Camera Preview Orientation
 
-Handle device rotation so the preview and captured photos have correct orientation.
+Use `AVCaptureDevice.RotationCoordinator` on iOS 17+ to get the preview
+and capture angles for the active camera. Create it with that camera and the
+preview layer, retain it, and replace it when changing cameras.
 
 ### Preview Layer Rotation
 
 ```swift
 import AVFoundation
-import UIKit
 
+@available(iOS 17.0, *)
 func updatePreviewOrientation(
     _ previewLayer: AVCaptureVideoPreviewLayer,
-    for interfaceOrientation: UIInterfaceOrientation
+    using coordinator: AVCaptureDevice.RotationCoordinator
 ) {
-    guard let connection = previewLayer.connection else { return }
-
-    // iOS 17+: use videoRotationAngle
-    if #available(iOS 17.0, *) {
-        let angle: CGFloat
-        switch interfaceOrientation {
-        case .portrait: angle = 90
-        case .portraitUpsideDown: angle = 270
-        case .landscapeLeft: angle = 180
-        case .landscapeRight: angle = 0
-        default: angle = 90
-        }
-        if connection.isVideoRotationAngleSupported(angle) {
-            connection.videoRotationAngle = angle
-        }
+    let angle = coordinator.videoRotationAngleForHorizonLevelPreview
+    if let connection = previewLayer.connection,
+       connection.isVideoRotationAngleSupported(angle) {
+        connection.videoRotationAngle = angle
     }
 }
 ```
+
+Call this once when configuring the preview. Observe
+`videoRotationAngleForHorizonLevelPreview` with KVO for subsequent updates
+and retain the observation for the preview's lifetime.
 
 ### Photo Output Orientation
 
-Set the rotation angle on the photo output connection before each capture to ensure the captured image matches the device orientation:
+Use the separate capture angle immediately before taking the photo:
 
 ```swift
-func capturePhotoWithOrientation() {
-    if let connection = photoOutput.connection(with: .video) {
-        // iOS 17+
-        if #available(iOS 17.0, *) {
-            let angle = currentVideoRotationAngle()
-            if connection.isVideoRotationAngleSupported(angle) {
-                connection.videoRotationAngle = angle
-            }
-        }
-    }
-
-    let settings = AVCapturePhotoSettings()
-    photoOutput.capturePhoto(with: settings, delegate: self)
-}
-
-private func currentVideoRotationAngle() -> CGFloat {
-    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
-        return 90
-    }
-    switch scene.interfaceOrientation {
-    case .portrait: return 90
-    case .portraitUpsideDown: return 270
-    case .landscapeLeft: return 180
-    case .landscapeRight: return 0
-    default: return 90
+@available(iOS 17.0, *)
+func setPhotoOrientation(
+    _ photoOutput: AVCapturePhotoOutput,
+    using coordinator: AVCaptureDevice.RotationCoordinator
+) {
+    let angle = coordinator.videoRotationAngleForHorizonLevelCapture
+    if let connection = photoOutput.connection(with: .video),
+       connection.isVideoRotationAngleSupported(angle) {
+        connection.videoRotationAngle = angle
     }
 }
 ```
 
-Use `videoRotationAngle` (iOS 17+) instead of the deprecated `videoOrientation` property. The angle is measured in degrees clockwise from landscape-right (the natural sensor orientation).
+The camera determines the angle. Avoid hardcoded values based on interface
+orientation because sensors can have different native orientations. See
+[AVCaptureDevice.RotationCoordinator](https://sosumi.ai/documentation/avfoundation/avcapturedevice/rotationcoordinator).
 
 ---
 

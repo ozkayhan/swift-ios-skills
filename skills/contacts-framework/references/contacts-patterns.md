@@ -191,7 +191,8 @@ struct MultiContactPicker: UIViewControllerRepresentable {
         Coordinator(self)
     }
 
-    final class Coordinator: NSObject, CNContactPickerDelegate {
+    @MainActor
+    final class Coordinator: NSObject, @preconcurrency CNContactPickerDelegate {
         let parent: MultiContactPicker
 
         init(_ parent: MultiContactPicker) {
@@ -234,7 +235,8 @@ struct EmailPicker: UIViewControllerRepresentable {
         Coordinator(self)
     }
 
-    final class Coordinator: NSObject, CNContactPickerDelegate {
+    @MainActor
+    final class Coordinator: NSObject, @preconcurrency CNContactPickerDelegate {
         let parent: EmailPicker
 
         init(_ parent: EmailPicker) {

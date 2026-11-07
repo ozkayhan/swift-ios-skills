@@ -508,33 +508,19 @@ with async/await via closure-based state handlers.
 
 ### Basic Usage Shape
 
+Build the stack with concrete protocol options. State handlers receive both the
+connection and the new state. For a one-to-one TCP connection, sending or
+receiving starts establishment and waits for readiness:
+
 ```swift
+import Foundation
 import Network
 
-let endpoint = NWEndpoint.hostPort(host: "api.example.com", port: 443)
-```
-
-Use the initializer variant that matches your protocol stack. The documented
-forms are:
-
-```swift
-// Protocol-stack builder form.
-NetworkConnection(to: endpoint) {
-    // ProtocolStackBuilder<ApplicationProtocol>
-}
-
-// Parameters-builder form.
-NetworkConnection(to: endpoint, using: builder)
-```
-
-After constructing a concrete connection for your app's protocol stack, install
-state handlers and start it:
-
-```swift
-func startConnection<ApplicationProtocol>(
-    _ connection: NetworkConnection<ApplicationProtocol>
-) where ApplicationProtocol: NetworkProtocolOptions {
-    connection.onStateUpdate { state in
+func sendToLocalPeer(_ data: Data, endpoint: NWEndpoint) async throws {
+    let connection = NetworkConnection(to: endpoint) {
+        TCP()
+    }
+    connection.onStateUpdate { _, state in
         switch state {
         case .ready:
             print("Connected")
@@ -546,10 +532,14 @@ func startConnection<ApplicationProtocol>(
             break
         }
     }
-
-    connection.start()
+    try await connection.send(data)
 }
 ```
+
+This plain TCP example is for a local test peer. Configure TLS for a production
+protocol carrying sensitive data. Call `start()` when explicitly starting a
+multiplexed connection such as QUIC; it is unavailable for one-to-one TCP.
+See [TN3213: Moving to Network framework](https://sosumi.ai/documentation/technotes/tn3213-moving-from-multipeer-connectivity-to-network-framework).
 
 `NetworkConnection` is for lower-level protocol stacks and QUIC-style transport
 work. Keep ordinary HTTP APIs on `URLSession` unless you need capabilities that

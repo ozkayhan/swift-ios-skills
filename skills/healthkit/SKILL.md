@@ -5,7 +5,7 @@ description: "Read, write, and query Apple Health data using HealthKit. Covers H
 
 # HealthKit
 
-Read and write health and fitness data from the Apple Health store. Covers authorization, queries, writing samples, background delivery, and workout sessions. Targets Swift 6.3 / iOS 26+.
+Read and write health and fitness data from the Apple Health store. Covers authorization, queries, writing samples, background delivery, and workout sessions. Targets Swift 6.4 / iOS 26+.
 
 ## Contents
 
@@ -82,7 +82,7 @@ func requestAuthorization() async throws {
 ### Checking Authorization Status
 
 `authorizationStatus(for:)` reports write/share authorization. HealthKit does
-not reveal whether read permission was granted or denied. If the user denies
+not provide a general read-authorization status. If the user denies
 read access, queries return only samples your app successfully saved, which may
 look like empty or partial data.
 
@@ -105,6 +105,29 @@ case .sharingDenied:
     break
 }
 ```
+
+### Limited Read History (iOS 27+)
+
+After requesting read authorization, use `earliestAuthorizedSampleDate(for:)`
+to check for a time boundary per data type:
+
+```swift
+if #available(iOS 27.0, *) {
+    let stepType = HKQuantityType(.stepCount)
+    let earliestByType = try await healthStore.earliestAuthorizedSampleDate(
+        for: [stepType]
+    )
+    if let earliest = earliestByType[stepType] {
+        // Show that trends based on samples ending before this date are unknown.
+        showLimitedHistory(since: earliest)
+    }
+}
+```
+
+When a boundary exists, cap chart or baseline coverage to the readable period.
+HealthKit applies the boundary to a sample's end date, so a sample can start
+before it and still be returned. A missing dictionary key is not proof of full
+access. Do not show missing historical data as zero.
 
 ## Reading Data: Sample Queries
 
@@ -371,7 +394,7 @@ HKUnit.count()                              // Steps, counts
 HKUnit.meter()                              // Distance
 HKUnit.mile()                               // Distance (imperial)
 HKUnit.kilocalorie()                        // Energy
-HKUnit.joule(with: .kilo)                   // Energy (SI)
+HKUnit.jouleUnit(with: .kilo)                   // Energy (SI)
 HKUnit.gramUnit(with: .kilo)                // Mass (kg)
 HKUnit.pound()                              // Mass (imperial)
 HKUnit.percent()                            // Percentage
@@ -412,6 +435,7 @@ HKUnit.literUnit(with: .deci)               // Deciliters
 - [ ] HealthKit capability enabled in Xcode project
 - [ ] Write authorization checked before saving; read denial handled as partial
       or empty query results
+- [ ] On iOS 27+, trends and baselines account for limited read history by type
 - [ ] Single `HKHealthStore` instance reused (not created per query)
 - [ ] Async query descriptors used instead of callback-based queries
 - [ ] Heavy queries not blocking main thread

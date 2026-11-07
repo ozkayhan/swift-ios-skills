@@ -344,21 +344,43 @@ let result = try await product.purchase(options: [
 
 ### Redemption Sheet
 
+On iOS 27+, the new SwiftUI overload returns a transaction verification result.
+It supports offer codes for consumables, non-consumables, and both subscription
+types. Pass a verified transaction to the same idempotent fulfillment path
+that handles `Transaction.updates`; finish only after delivering content.
+
 ```swift
 @State private var showRedeemSheet = false
 
 var body: some View {
-    Button("Redeem Code") { showRedeemSheet = true }
-        .offerCodeRedemption(isPresented: $showRedeemSheet) { result in
-            switch result {
-            case .success:
-                await storeManager.updateEntitlements()
-            case .failure(let error):
-                print("Redemption failed: \(error)")
+    if #available(iOS 27.0, *) {
+        redeemButton
+            .offerCodeRedemption(options: [], isPresented: $showRedeemSheet) { result in
+                switch result {
+                case .success(.verified(let transaction)):
+                    Task { await deliverVerifiedTransaction(transaction) }
+                case .success(.unverified(_, let error)):
+                    print("Could not verify redeemed transaction: \(error)")
+                case .failure(let error):
+                    print("Redemption failed: \(error)")
+                }
             }
-        }
+    } else {
+        redeemButton
+            .offerCodeRedemption(isPresented: $showRedeemSheet)
+        // Process the transaction through the Transaction.updates listener.
+    }
+}
+
+private var redeemButton: some View {
+    Button("Redeem Code") { showRedeemSheet = true }
 }
 ```
+
+`deliverVerifiedTransaction` is your app's fulfillment handler. In UIKit, use
+`AppStore.presentOfferCodeRedeemSheet(from:options:)` on iOS 27+ and
+`presentOfferCodeRedeemSheet(in:)` for iOS 16–26 compatibility.
+See [What's new in Apple In-App Purchase](https://sosumi.ai/videos/play/wwdc2026/210/).
 
 ### Show Redeem Button on Subscription Store
 
@@ -376,7 +398,7 @@ try await product.purchase(options: [.codeOffer(referenceName: "SUMMER2024")])
 ```
 
 Also test the user-facing redemption path with `.storeButton(.visible, for:
-.redeemCode)` or `.offerCodeRedemption(isPresented:)`, then verify the resulting
+.redeemCode)` or the version-appropriate redemption modifier above, then verify the resulting
 transaction uses `transaction.offer?.type == .code` and the expected
 `transaction.offer?.id`.
 

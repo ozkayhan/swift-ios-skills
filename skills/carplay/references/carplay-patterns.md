@@ -129,24 +129,34 @@ A complete navigation session flow from trip creation through completion.
 import CarPlay
 import MapKit
 
-final class NavigationManager: @unchecked Sendable {
+@MainActor
+final class NavigationManager {
     var navigationSession: CPNavigationSession?
     var mapTemplate: CPMapTemplate?
 
     func createTrip(to destination: CLLocationCoordinate2D,
                     name: String) -> CPTrip {
         let origin = MKMapItem.forCurrentLocation()
-        let destItem = MKMapItem(placemark: MKPlacemark(coordinate: destination))
+        let location = CLLocation(latitude: destination.latitude, longitude: destination.longitude)
+        let destItem = MKMapItem(location: location, address: nil)
         destItem.name = name
 
-        return CPTrip(origin: origin, destination: destItem, routeChoices: [
+        let routeChoices = [
             CPRouteChoice(summaryVariants: ["Fastest"],
                           additionalInformationVariants: ["Via Highway"],
                           selectionSummaryVariants: ["25 min"]),
             CPRouteChoice(summaryVariants: ["Shortest"],
                           additionalInformationVariants: ["Local Roads"],
                           selectionSummaryVariants: ["30 min"])
-        ])
+        ]
+        if #available(iOS 26.4, *) {
+            return CPTrip(
+                originWaypoint: CPNavigationWaypoint(mapItem: origin, locationThreshold: nil, entryPoints: []),
+                destinationWaypoint: CPNavigationWaypoint(mapItem: destItem, locationThreshold: nil, entryPoints: []),
+                routeChoices: routeChoices
+            )
+        }
+        return CPTrip(origin: origin, destination: destItem, routeChoices: routeChoices)
     }
 
     func startNavigation(for trip: CPTrip, routeChoice: CPRouteChoice) {

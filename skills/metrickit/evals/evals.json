@@ -22,7 +22,7 @@
       "expected_output": "A correction-focused answer using the iOS 27 MetricManager log handle, basic mxSignpost begin/end calls, MetricResult.signpostInterval, and trackLaunchTask while isolating legacy MX APIs.",
       "files": [],
       "expectations": [
-        "Uses the retained MetricManager instance and manager.logHandle(category:) in the iOS 27 branch.",
+        "Uses the static MetricManager.logHandle(category:) method in the iOS 27 branch.",
         "Uses mxSignpost(.begin/.end, log:name:) without inventing or passing a signpost ID for the basic MetricKit pattern.",
         "States that iOS 27 custom MetricKit intervals appear as MetricResult.signpostInterval.",
         "Uses manager.trackLaunchTask(id:onTrackingError:_:) with a stable LaunchTaskID instead of manual extend and finish calls.",

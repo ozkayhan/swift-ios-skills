@@ -319,6 +319,7 @@ switch status {
 case .installed: break    // Ready to translate offline
 case .supported: break    // Needs download
 case .unsupported: break  // Language pair not available
+@unknown default: break  // Future SDK case
 }
 ```
 

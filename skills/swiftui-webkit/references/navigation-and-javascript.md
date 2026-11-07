@@ -36,7 +36,7 @@ final class ArticleNavigationDecider: WebPage.NavigationDeciding {
 }
 ```
 
-This keeps app-owned pages embedded while still letting the app hand off external destinations.
+This keeps app-owned pages embedded while still letting the app hand off external destinations. On iOS 27+, `willSubmit(formInfo:)` can observe autofill information before a form submission. Keep that async callback short: it delays the submission and cannot change or cancel it. Use navigation policy for allow/cancel decisions. See [willSubmit(formInfo:)](https://sosumi.ai/documentation/webkit/webpage/navigationdeciding/willsubmit(forminfo:)).
 
 ## Opening external links outside the embedded web view
 

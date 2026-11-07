@@ -318,7 +318,7 @@ actor AudioClassifier {
     }
 
     /// Classify the next audio frame using accumulated state
-    func classify(audioFeatures: MLMultiArray) async throws -> String {
+    func classify(audioFeatures: MLMultiArray) throws -> String {
         guard let state else {
             throw ClassifierError.noActiveSession
         }
@@ -349,7 +349,8 @@ enum ClassifierError: Error {
   domains; it does not permit concurrent predictions on one state. Do not read or
   write state buffers while a prediction is in flight.
 - **Async options overload:** Use the synchronous `prediction(from:using:)`
-  overload for simple serialized loops. If you need `MLPredictionOptions`, iOS
+  overload in an actor-isolated synchronous method for simple serialized loops.
+  Call the actor method with `await` from outside the actor. If you need `MLPredictionOptions`, iOS
   18+ also provides async `prediction(from:using:options:)`; keep one in-flight
   prediction per state.
 - **Independent streams:** Call `model.makeState()` per stream when processing
@@ -506,16 +507,16 @@ final class ObjectDetectionViewModel {
             config.computeUnits = .all
 
             let detector = try MyObjectDetector(configuration: config)
-            let request = CoreMLRequest(model: .init(detector.model))
+            let request = try CoreMLRequest(model: .init(model: detector.model))
 
             let results = try await request.perform(on: image)
-            detections = results.compactMap { observation in
+            detections = results.compactMap { observation -> Detection? in
                 guard let object = observation as? RecognizedObjectObservation,
                       let topLabel = object.labels.first else { return nil }
                 return Detection(
                     label: topLabel.identifier,
                     confidence: topLabel.confidence,
-                    boundingBox: object.boundingBox
+                    boundingBox: object.boundingBox.cgRect
                 )
             }
         } catch {
@@ -528,7 +529,7 @@ final class ObjectDetectionViewModel {
 ```swift
 func classifyImage(_ image: CGImage) async throws -> [(label: String, confidence: Float)] {
     let classifier = try MyImageClassifier(configuration: .init())
-    let request = CoreMLRequest(model: .init(classifier.model))
+    let request = try CoreMLRequest(model: .init(model: classifier.model))
 
     let results = try await request.perform(on: image)
     return results.compactMap { observation in
@@ -703,7 +704,7 @@ func loadAndPredict(modelName: String, input: any MLFeatureProvider) async -> (a
             return nil
         }
         let model = try await MLModel.load(contentsOf: url, configuration: config)
-        return try model.prediction(from: input)
+        return try await model.prediction(from: input)
     } catch {
         print("Model error: \(error)")
         return nil

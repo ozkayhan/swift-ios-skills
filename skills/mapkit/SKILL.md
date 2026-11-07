@@ -277,7 +277,9 @@ struct LocationPermissionView: View {
 
 ## Geocoding
 
-### CLGeocoder (iOS 8+)
+### CLGeocoder (legacy compatibility)
+
+Use the MapKit requests below on iOS 26+. Keep `CLGeocoder`, deprecated in iOS 26, only for older deployment targets.
 
 ```swift
 let geocoder = CLGeocoder()
@@ -290,8 +292,8 @@ if let location = placemarks.first?.location {
 
 // Reverse geocoding: coordinates -> placemark
 let location = CLLocation(latitude: 37.3349, longitude: -122.0090)
-let placemarks = try await geocoder.reverseGeocodeLocation(location)
-if let placemark = placemarks.first {
+let reversePlacemarks = try await geocoder.reverseGeocodeLocation(location)
+if let placemark = reversePlacemarks.first {
     let address = [placemark.name, placemark.locality, placemark.administrativeArea]
         .compactMap { $0 }
         .joined(separator: ", ")

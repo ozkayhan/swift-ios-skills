@@ -162,8 +162,12 @@ Use for latency-sensitive work where enqueue delay is unacceptable.
 ## Swift 6.4 Cleanup APIs
 
 Swift 6.4 adds async `defer` (SE-0493) and cancellation shields (SE-0504).
-Gate both behind Swift 6.4 / Xcode 27 beta and the platform availability of
-`withTaskCancellationShield` (iOS 27+ beta).
+Async `defer` requires the Swift 6.4 compiler. The cancellation shield also
+requires iOS 27, macOS 27, or the aligned Apple OS release. Use `#if compiler(>=6.4)`
+when the same source must compile with an older toolchain, and an availability
+check when calling the shield from code that still deploys to an older OS.
+
+See [Swift 6.4 release notes](https://www.swift.org/blog/swift-6.4-released/).
 
 Use async `defer` when cleanup itself must call async APIs. The defer body
 inherits surrounding isolation and is implicitly awaited at scope exit, but it

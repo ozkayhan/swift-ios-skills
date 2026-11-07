@@ -41,7 +41,8 @@ final class BLEViewModel: NSObject {
 
     override init() {
         super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        // Deliver delegate callbacks on the main queue for this main-actor model.
+        centralManager = CBCentralManager(delegate: self, queue: .main)
     }
 
     func startScan() {
@@ -71,7 +72,7 @@ final class BLEViewModel: NSObject {
     }
 }
 
-extension BLEViewModel: CBCentralManagerDelegate {
+extension BLEViewModel: @preconcurrency CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         isBluetoothOn = central.state == .poweredOn
     }
@@ -115,7 +116,7 @@ extension BLEViewModel: CBCentralManagerDelegate {
     }
 }
 
-extension BLEViewModel: CBPeripheralDelegate {
+extension BLEViewModel: @preconcurrency CBPeripheralDelegate {
     func peripheral(
         _ peripheral: CBPeripheral,
         didDiscoverServices error: Error?

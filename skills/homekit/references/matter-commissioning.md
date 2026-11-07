@@ -27,7 +27,11 @@ final class HomeStore: NSObject {
     let homeManager = HMHomeManager()
 
     var homes: [HMHome] = []
-    var primaryHome: HMHome?
+    var selectedHomeID: UUID?
+
+    var selectedHome: HMHome? {
+        homes.first { $0.uniqueIdentifier == selectedHomeID }
+    }
     var isAuthorized = false
 
     override init() {
@@ -36,11 +40,11 @@ final class HomeStore: NSObject {
     }
 
     var accessories: [HMAccessory] {
-        primaryHome?.accessories ?? []
+        selectedHome?.accessories ?? []
     }
 
     var rooms: [HMRoom] {
-        primaryHome?.rooms ?? []
+        selectedHome?.rooms ?? []
     }
 
     func addHome(name: String) async throws {
@@ -60,7 +64,10 @@ extension HomeStore: HMHomeManagerDelegate {
     nonisolated func homeManagerDidUpdateHomes(_ manager: HMHomeManager) {
         Task { @MainActor in
             homes = manager.homes
-            primaryHome = manager.primaryHome
+            if homes.count == 1 {
+                selectedHomeID = homes.first?.uniqueIdentifier
+            }
+            // For multiple homes, set selectedHomeID from the person's selection.
         }
     }
 
@@ -118,7 +125,7 @@ struct AccessoryListView: View {
                     accessoryList
                 }
             }
-            .navigationTitle(homeStore.primaryHome?.name ?? "Home")
+            .navigationTitle(homeStore.selectedHome?.name ?? "Home")
         }
     }
 
@@ -448,7 +455,7 @@ import os
 let homeKitLog = Logger(subsystem: "com.example.app", category: "HomeKit")
 
 func logAccessories() {
-    guard let home = homeManager.primaryHome else { return }
+    guard let home = homeStore.selectedHome else { return }
     for accessory in home.accessories {
         homeKitLog.debug("Accessory: \(accessory.name), reachable: \(accessory.isReachable)")
         for service in accessory.services {

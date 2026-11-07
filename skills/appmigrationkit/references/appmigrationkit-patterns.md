@@ -504,6 +504,8 @@ struct MyApp: App {
                 succeeded: false,
                 errorMessage: error.localizedDescription
             )
+        @unknown default:
+            return
         }
 
         MigrationStatus.clearImportStatus()

@@ -195,11 +195,15 @@ struct CategoryProvider: AppIntentTimelineProvider {
 | `.systemSmall` | iOS, iPadOS, macOS, CarPlay (iOS 26+) |
 | `.systemMedium` | iOS, iPadOS, macOS |
 | `.systemLarge` | iOS, iPadOS, macOS |
-| `.systemExtraLarge` | iPadOS only |
+| `.systemExtraLarge` | iPadOS, macOS; compatible iOS/iPadOS widgets on visionOS |
+| `.systemExtraLargePortrait` | visionOS; iPhone Home Screen, iPhone/iPad Today View, and Mac desktop starting in the 27 releases |
 | `.accessoryCircular` | iOS, watchOS |
 | `.accessoryRectangular` | iOS, watchOS |
 | `.accessoryInline` | iOS, watchOS |
 | `.accessoryCorner` | watchOS only |
+
+Gate the portrait family when supporting OS releases where it is unavailable.
+See [WidgetFamily.systemExtraLargePortrait](https://sosumi.ai/documentation/widgetkit/widgetfamily/systemextralargeportrait).
 
 Adapt layout per family using `@Environment(\.widgetFamily)`:
 

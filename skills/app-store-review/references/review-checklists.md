@@ -19,12 +19,14 @@ record the checked date beside each blocker.
 
 | Requirement | Current release evidence |
 |---|---|
-| Upload toolchain | Uploads after April 28, 2026 require Xcode 26+ and the relevant platform SDK 26+. |
-| iPhone screenshots | As of May 2026, 6.9-inch screenshots are the primary accepted set; provide 6.5-inch only when the 6.9-inch set is absent or intentionally optimized as a fallback. |
+| Upload toolchain | Xcode 26+ and the relevant platform SDK 26+ are the current minimum. App Store Connect accepts Xcode 27.2 / iOS 27.2 SDK uploads. Apple announced an iOS/iPadOS 27 SDK minimum and iOS 15 deployment floor starting April 2027. |
+| iPhone screenshots | Apple currently lists at least one iPhone with Dynamic Island (medium display) screenshot in the required set. Check the specification for scaling and fallback sizes. Apple lists iPhone Duo screenshots as required starting April 2027 for apps using the iOS 27.1 SDK or later. |
 | iPad screenshots | Provide 13-inch screenshots when the app runs on iPad. |
 | Metadata limits | App name: 30 characters; subtitle: 30 characters; keyword field: up to 100 UTF-8 bytes, with comma-separated terms longer than two characters and no spaces after commas. |
 
 Sources: [Upcoming requirements](https://developer.apple.com/news/upcoming-requirements/)
+[Submitting apps](https://developer.apple.com/app-store/submitting/),
+[App Store Connect release notes](https://developer.apple.com/help/app-store-connect/release-notes/),
 and [Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 
 ## Entitlements and Usage Descriptions
@@ -75,6 +77,7 @@ can pause, resume, or complete the rollout.
 
 Use this to avoid Guideline 2.1 rejections:
 
+- [ ] App Review contact phone uses international format (for example, `+90…`)
 - [ ] Demo credentials provided in App Review Information notes (if login required)
 - [ ] Demo mode available if credentials are impractical or account state is hard to reproduce
 - [ ] Demo account works and has access to all features
@@ -82,6 +85,11 @@ Use this to avoid Guideline 2.1 rejections:
 - [ ] All screens have real content (no placeholders or Lorem Ipsum)
 - [ ] No broken links or dead-end flows
 - [ ] All hardware-required features have fallback or reviewer instructions
+
+Starting November 16, 2026, declare Shared Location and Dating and
+Relationships when submitting an app update or editing age rating answers.
+Apple requires all apps to complete the declarations by January 12, 2027.
+See [Apple’s age rating announcement](https://developer.apple.com/news/?id=yxkh08us).
 
 ## Privacy Manifest Checklist
 

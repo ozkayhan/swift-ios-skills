@@ -1,12 +1,12 @@
 ---
 name: apple-on-device-ai
-description: "Build private, on-device AI features on iPhone, iPad, and Mac with Foundation Models, Core ML, MLX Swift, or llama.cpp. Use when choosing an Apple-local model runtime, building an Apple Intelligence chatbot or tool-calling feature, running an LLM on Apple Silicon, converting or compressing a Python model for Core ML, or comparing on-device inference backends. For Swift Core ML loading and prediction code, use the coreml skill."
+description: "Build private, on-device AI features on iPhone, iPad, and Mac with Foundation Models, Core AI, Core ML, MLX Swift, or llama.cpp. Use when choosing an Apple-local model runtime, building an Apple Intelligence chatbot or tool-calling feature, running an LLM on Apple Silicon, converting or compressing a Python model for Core ML, or comparing on-device inference backends. For Swift Core ML loading and prediction code, use the coreml skill."
 ---
 
 # On-Device AI for Apple Platforms
 
 Guide for selecting, deploying, and optimizing on-device ML models. Covers Apple
-Foundation Models, Core ML, MLX Swift, and llama.cpp.
+Foundation Models, Core AI, Core ML, MLX Swift, and llama.cpp.
 
 ## Contents
 
@@ -81,7 +81,8 @@ deployments needing broad device support.
 | Text generation on Apple Intelligence devices (iOS 26+) | Foundation Models |
 | Structured output from on-device LLM | Foundation Models (`@Generable`) |
 | Image classification, object detection | Core ML |
-| Custom model from PyTorch/TensorFlow | Core ML + coremltools |
+| Custom neural network from PyTorch for iOS 27+ on Apple silicon | Core AI with an `.aimodel`; compare with Core ML if the app needs existing Vision integration |
+| Custom model from PyTorch/TensorFlow with earlier deployment targets | Core ML + coremltools |
 | Running specific open-source LLMs | MLX Swift or llama.cpp |
 | Maximum throughput on Apple Silicon | MLX Swift |
 | Cross-platform LLM inference | llama.cpp |
@@ -107,12 +108,16 @@ case .available:
     // Proceed with model usage
 case .unavailable(.appleIntelligenceNotEnabled):
     // Guide user to enable Apple Intelligence in Settings
+    break
 case .unavailable(.modelNotReady):
     // System model assets are not ready; show loading state
+    break
 case .unavailable(.deviceNotEligible):
     // Device cannot run Apple Intelligence; use fallback
+    break
 case .unavailable(let reason):
     // Unknown or future unavailable reason; use fallback and log reason
+    print(reason)
 }
 ```
 
@@ -138,12 +143,19 @@ Required guardrails:
 
 Load [the Foundation Models reference](references/foundation-models.md) when the
 task needs `@Generable`, `@Guide`, streaming, tool definitions, transcripts,
-generation options, custom adapters, prompt design, or detailed error handling.
+generation options, custom adapters, iOS 27 model and image input selection,
+prompt design, or detailed error handling.
 
 ## Core ML Overview
 
 Apple's framework for deploying trained models. Automatically dispatches to the
 optimal compute unit (CPU, GPU, or Neural Engine).
+
+For an iOS 27+ neural network deployment on Apple silicon, also evaluate
+[Core AI](https://sosumi.ai/documentation/coreai). It loads `.aimodel` assets
+exported with Apple’s Core AI PyTorch extensions and lets you specialize,
+cache, and profile inference. Keep Core ML for existing `.mlpackage` models,
+earlier OS targets, and non-neural models such as decision trees.
 
 ### Model Formats
 
@@ -311,7 +323,7 @@ unless product explicitly opts into a nonlocal fallback.
 - [ ] Foundation Models: graceful fallback when model unavailable
 - [ ] Foundation Models: session prewarm called before user interaction
 - [ ] Foundation Models: `@Generable` properties in logical generation order
-- [ ] Foundation Models: token budget accounted for (check `contextSize`)
+- [ ] Foundation Models: token budget accounted for (check `contextSize` on iOS 26.4+ / macOS 26.4+)
 - [ ] Core ML: model format is mlprogram (.mlpackage) for iOS 15+
 - [ ] Core ML: source/Core ML parity passes fixed fixtures and task tolerances
 - [ ] Core ML: compressed model revalidated and profiled on physical targets

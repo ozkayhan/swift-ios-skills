@@ -4,12 +4,12 @@
   "checklist": [
     {
       "name": "Async Defer Availability",
-      "description": "States that async defer is a Swift 6.4 / Xcode 27 beta-era feature and should not be presented as available to Swift 6.3 / Xcode 26.5 projects.",
+      "description": "States that async defer is a Swift 6.4 / Xcode 27 feature and should not be presented as available to Swift 6.3 / Xcode 26.5 projects.",
       "max_score": 25
     },
     {
       "name": "Cancellation Shield Availability",
-      "description": "States that withTaskCancellationShield is a Swift 6.4 / iOS 27+ beta-era API and should be used only for short cleanup or rollback, not ordinary cancelable work.",
+      "description": "States that withTaskCancellationShield is a Swift 6.4 / iOS 27+ API and should be used only for short cleanup or rollback, not ordinary cancelable work.",
       "max_score": 25
     },
     {

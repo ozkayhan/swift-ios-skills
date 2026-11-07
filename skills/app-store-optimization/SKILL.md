@@ -121,6 +121,14 @@ Update promotional text for feature launches, seasonal moments, awards or press,
 
 Most users never scroll past the first 3 visible screenshots. These slots determine whether a user engages with the full product page or moves on.
 
+On iOS and iPadOS 27+, optional creative images or videos can appear as the
+product page header or in search results. Manage these in App Store Connect’s
+Asset Library, choose one universal asset or dedicated assets per placement,
+and use Preview to inspect each placement before submitting for review. Keep
+the required screenshots and previews current for the rest of the product page
+and earlier OS versions. See [Apple’s asset workflow](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets)
+and [creative asset specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications).
+
 ### First 3 screenshots
 
 - Lead with the primary value proposition -- the screen that best demonstrates why someone should download.

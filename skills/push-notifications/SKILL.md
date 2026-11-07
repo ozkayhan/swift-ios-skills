@@ -312,13 +312,17 @@ Use localization keys so the notification displays in the user's language:
 
 Implement the delegate to control foreground display and handle user taps. Set the delegate as early as possible -- in `application(_:didFinishLaunchingWithOptions:)` or `App.init`.
 
+Keep the delegate callbacks `nonisolated` in Swift 6. Extract typed payload values before calling main-actor UI or routing code.
+
 ```swift
+import UserNotifications
+
 @MainActor
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationDelegate()
 
     // Called when notification arrives while app is in FOREGROUND
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
@@ -328,23 +332,23 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 
     // Called when user TAPS the notification
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        let userInfo = response.notification.request.content.userInfo
+        let messageID = response.notification.request.content.userInfo["messageId"] as? String
         let actionIdentifier = response.actionIdentifier
 
         switch actionIdentifier {
         case UNNotificationDefaultActionIdentifier:
             // User tapped the notification body
-            await handleNotificationTap(userInfo: userInfo)
+            await handleNotificationTap(messageID: messageID)
         case UNNotificationDismissActionIdentifier:
             // User dismissed the notification
             break
         default:
             // Custom action button tapped
-            await handleCustomAction(actionIdentifier, userInfo: userInfo)
+            await handleCustomAction(actionIdentifier, messageID: messageID)
         }
     }
 }
@@ -363,8 +367,9 @@ final class DeepLinkRouter {
 }
 
 // In NotificationDelegate:
-func handleNotificationTap(userInfo: [AnyHashable: Any]) async {
-    guard let id = userInfo["messageId"] as? String else { return }
+@MainActor
+func handleNotificationTap(messageID: String?) {
+    guard let id = messageID else { return }
     DeepLinkRouter.shared.pendingDestination = .chat(id: id)
 }
 
@@ -421,16 +426,18 @@ func registerNotificationCategories() {
 ### Handling Action Responses
 
 ```swift
-func handleCustomAction(_ identifier: String, userInfo: [AnyHashable: Any]) async {
+@MainActor
+func handleCustomAction(_ identifier: String, messageID: String?) async {
     switch identifier {
     case "REPLY_ACTION":
-        // response is UNTextInputNotificationResponse for text input actions
+        // Extract userText from UNTextInputNotificationResponse in the delegate.
+        // See the full example in references/notification-patterns.md.
         break
     case "LIKE_ACTION":
-        guard let messageId = userInfo["messageId"] as? String else { return }
+        guard let messageId = messageID else { return }
         await MessageService.shared.likeMessage(id: messageId)
     case "DELETE_ACTION":
-        guard let messageId = userInfo["messageId"] as? String else { return }
+        guard let messageId = messageID else { return }
         await MessageService.shared.deleteMessage(id: messageId)
     default:
         break
@@ -460,6 +467,7 @@ let category = UNNotificationCategory(
     identifier: "MESSAGE_CATEGORY",
     actions: [replyAction],
     intentIdentifiers: [],
+    hiddenPreviewsBodyPlaceholder: nil,
     categorySummaryFormat: "%u more messages from %@",
     options: []
 )

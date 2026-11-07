@@ -2,7 +2,7 @@
 
 > **Scope:** Migrating sensitive data from UserDefaults, plists, NSCoding archives, and other insecure storage to Apple Keychain Services. Covers secure deletion of legacy data, first-launch keychain cleanup, versioned migration patterns, and the Team ID transfer edge case.
 >
-> **Applies to:** iOS 15+ (actor support, pre-warming), iOS 17+ (recommended deployment target)
+> **Applies to:** iOS 15+ (actor support), iOS 17+ (recommended deployment target)
 >
 > **Cross-references:** `keychain-fundamentals.md` (SecItem CRUD), `keychain-access-control.md` (accessibility classes), `common-anti-patterns.md` (UserDefaults secrets anti-pattern), `credential-storage-patterns.md` (token lifecycle post-migration), `testing-security-code.md` (protocol-based mocking)
 
@@ -13,9 +13,9 @@
 - [Why Migrate — The Risk of Legacy Storage](#why-migrate-the-risk-of-legacy-storage)
 - [The Five Correctness Traps](#the-five-correctness-traps)
 - [First-Launch Keychain Cleanup](#first-launch-keychain-cleanup)
-- [Atomic Migration: Read → Write → Verify → Delete](#atomic-migration-read-write-verify-delete)
+- [Verified Migration: Read → Write → Verify → Delete](#verified-migration-read-write-verify-delete)
 - [Versioned Migration with Schema Tracking](#versioned-migration-with-schema-tracking)
-- [Orphaned Items: Why You Must Never Rename kSecAttrService](#orphaned-items-why-you-must-never-rename-ksecattrservice)
+- [Renaming a Keychain Service or Account](#renaming-a-keychain-service-or-account)
 - [Background Launch and the Locked-Device Trap](#background-launch-and-the-locked-device-trap)
 - [The Phantom Mismatch Bug](#the-phantom-mismatch-bug)
 - [Team ID Change: The App Transfer Edge Case](#team-id-change-the-app-transfer-edge-case)
@@ -37,7 +37,7 @@ UserDefaults, `.plist` files, and NSCoding archives store data as unencrypted pl
 | UserDefaults      | No                | Yes                                | No                     | **No**               |
 | .plist files      | No (default)      | Yes                                | No                     | **No**               |
 | NSCoding archives | No (default)      | Yes                                | No                     | **No**               |
-| Keychain          | Yes (AES-256-GCM) | `ThisDeviceOnly` variants excluded | **Yes**                | **Yes**              |
+| Keychain          | Yes (AES-256-GCM) | `ThisDeviceOnly` variants excluded | May persist                | **Yes**              |
 
 Keychain items are managed by the `securityd` daemon, encrypted with per-row keys protected by the Secure Enclave, and isolated from the app sandbox. This is the only appropriate location for tokens, passwords, API keys, and PII on Apple platforms.
 
@@ -49,112 +49,54 @@ Most AI-generated migration code contains at least one of these errors. Each pas
 
 **Trap 1 — Legacy data survives after migration.** Calling `UserDefaults.standard.removeObject(forKey:)` removes the key-value pair from the in-memory cache and plist file, but does not securely overwrite NAND flash. However, iOS achieves secure deletion through _cryptographic erasure_: every file has a per-file AES-256 key, and standard deletion APIs destroy that key via Effaceable Storage, rendering physical bits permanently inaccessible. The real risk vector is **unencrypted backups** created before migration completes — the plist stays on disk until the filesystem reclaims space. **Always delete all legacy keys explicitly after verified keychain writes.**
 
-**Trap 2 — Keychain items survive app deletion.** When a user uninstalls your app, UserDefaults and sandbox files are wiped, but keychain items persist indefinitely. Apple attempted to change this in iOS 10.3 betas but reverted due to compatibility issues. On reinstall, stale keychain items (old tokens, expired credentials, outdated schemas) cause silent authentication failures or — worse — restore a _previous user's_ session.
+**Trap 2 — Keychain items may survive app deletion.** On reinstall, validate retained credentials before restoring a session. Also handle the case where the item is missing.
 
-**Trap 3 — Migration runs on every launch.** Checking UserDefaults for legacy data on every launch wastes cycles and risks data loss during iOS 15+ app pre-warming. When the system pre-warms your process before the device is unlocked, `UserDefaults` may return empty values (the encrypted plist is inaccessible). A migration that interprets empty results as "nothing to migrate" will skip real data or overwrite valid keychain entries with nil.
+**Trap 3 — A migration treats unavailable data as absent.** On a locked-device launch, defer migration when protected data is unavailable. Treat a read error differently from a confirmed missing value.
 
-**Trap 4 — Non-atomic migration leaves data in limbo.** Writing to keychain then deleting from UserDefaults as two independent operations creates a failure window. If the app is killed between write and delete — or the keychain write silently fails — users lose their data entirely.
+**Trap 4 — Deletion before verification can lose data.** A crash after a successful keychain write can leave both copies. Verify the destination before deleting the legacy value, and make retries safe when both copies exist.
 
-**Trap 5 — Changing `kSecAttrService` or `kSecAttrAccount` orphans existing items.** These attributes form the primary key for `kSecClassGenericPassword`. Changing either in a new version doesn't update existing items — it creates new ones. The old items become invisible orphans that waste keychain space and cause `errSecDuplicateItem` in unexpected contexts. Critically, `SecItemUpdate` **cannot change primary key attributes** — the call will error. You must perform a full rekey migration: read old → write new → verify → delete old.
+**Trap 5 — A new lookup misses items saved under the old service or account.** Migrate existing entries before switching lookups. Check for duplicate destination items before deciding how to resolve conflicts.
 
 ---
 
 ## First-Launch Keychain Cleanup
 
-The persistence asymmetry (UserDefaults deleted on uninstall, keychain not) enables a reliable reinstall detector. This pattern **must run before any other keychain or SDK initialization** — Firebase, analytics, and auth libraries all read keychain items during setup.
+Keychain items may outlive the app’s sandbox. An absent local marker does not prove a reinstall, especially when introducing the marker to an existing app. Validate the account/session before restoring credentials. If product policy requires per-install cleanup, distinguish existing installations before enabling it and scope deletion to the specific app-private credential. See [Apple Developer Technical Support](https://developer.apple.com/forums/thread/36442).
+
+For a confirmed fresh install under that policy, run this operation before
+restoring the local session. Defer initialization if protected data is
+unavailable, and mark cleanup complete only after a successful deletion or a
+confirmed absence.
 
 ```swift
-// ✅ CORRECT: First-launch cleanup with protected data guard
-// iOS 15+ required for isProtectedDataAvailable / pre-warming behavior
+import Foundation
+import Security
 
-actor FirstLaunchGuard {
-    static let shared = FirstLaunchGuard()
-    private let hasRunKey = "com.myapp.hasCompletedFirstLaunch"
-
-    /// Call at the very start of app lifecycle, before SDK initialization.
-    func performCleanupIfNeeded() async {
-        let isSubsequentRun = UserDefaults.standard.bool(forKey: hasRunKey)
-        guard !isSubsequentRun else { return }
-
-        // iOS 15+ pre-warming guard: device may still be locked
-        guard await isProtectedDataAvailable() else {
-            await waitForProtectedData()
-            return
-        }
-
-        // Wipe stale keychain items from a previous installation
-        deleteAllKeychainItems()
-
-        // Set flag so this only runs once per install
-        UserDefaults.standard.set(true, forKey: hasRunKey)
-    }
-
-    private func deleteAllKeychainItems() {
-        let classes: [CFString] = [
-            kSecClassGenericPassword, kSecClassInternetPassword,
-            kSecClassCertificate, kSecClassKey, kSecClassIdentity
-        ]
-        for itemClass in classes {
-            let query: NSDictionary = [
-                kSecClass: itemClass,
-                kSecAttrSynchronizable: kSecAttrSynchronizableAny
-            ]
-            SecItemDelete(query)
-        }
-    }
-
-    private func isProtectedDataAvailable() async -> Bool {
-        await MainActor.run {
-            UIApplication.shared.isProtectedDataAvailable
-        }
-    }
-
-    private func waitForProtectedData() async {
-        await withCheckedContinuation { continuation in
-            NotificationCenter.default.addObserver(
-                forName: UIApplication.protectedDataDidBecomeAvailableNotification,
-                object: nil, queue: .main
-            ) { _ in
-                Task {
-                    self.deleteAllKeychainItems()
-                    UserDefaults.standard.set(true, forKey: self.hasRunKey)
-                    continuation.resume()
-                }
-            }
-        }
-    }
+func removeLocalCredential(service: String, account: String, appPrivateGroup: String) -> OSStatus {
+    let query: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service,
+        kSecAttrAccount as String: account,
+        kSecAttrAccessGroup as String: appPrivateGroup,
+        kSecAttrSynchronizable as String: false
+    ]
+    return SecItemDelete(query as CFDictionary)
 }
 ```
 
-```swift
-// ❌ INCORRECT: No first-launch cleanup — stale keychain from previous install
-@main
-struct BrokenApp: App {
-    init() {
-        // Reads keychain without checking for stale data
-        if let token = try? keychainRead(service: "com.myapp", account: "authToken") {
-            // This token might be from a PREVIOUS user who deleted the app.
-            // The new user inherits someone else's session.
-            AuthManager.shared.restoreSession(token: token)
-        }
-    }
-    var body: some Scene { WindowGroup { ContentView() } }
-}
-```
-
-The `isProtectedDataAvailable` check is critical. iOS 15 introduced app pre-warming — the system can launch your process before the user unlocks the device. During pre-warming, both UserDefaults and keychain items with `kSecAttrAccessibleWhenUnlocked` are unavailable. Multiple high-profile apps (including Twitter) suffered mass user logouts on iOS 15 because their startup code interpreted empty data during pre-warm as "no credentials" and wiped sessions.
-
-> **Include `kSecAttrSynchronizableAny`** in cleanup queries. Without it, `SecItemDelete` skips iCloud-synced items, leaving them as invisible ghosts.
+Run the blocking keychain call away from the main thread. Treat only
+`errSecSuccess` and `errSecItemNotFound` as completion. Avoid a class-wide
+query or `kSecAttrSynchronizableAny` for app-local cleanup.
 
 ---
 
-## Atomic Migration: Read → Write → Verify → Delete
+## Verified Migration: Read → Write → Verify → Delete
 
 The most dangerous pattern is deleting legacy data before confirming the keychain write succeeded. The correct sequence is always: **read → write → verify → delete**.
 
 ```swift
-// ✅ CORRECT: Atomic per-key migration with verification and rollback
-actor AtomicMigrator {
+// Verify each destination before deleting its legacy value
+actor VerifiedMigrator {
     struct MigrationResult {
         let key: String
         let succeeded: Bool
@@ -199,7 +141,7 @@ actor AtomicMigrator {
                 results.append(.init(key: key, succeeded: true, error: nil))
 
             } catch {
-                // ROLLBACK: Leave UserDefaults intact for this key
+                // Keep UserDefaults intact for retry
                 results.append(.init(key: key, succeeded: false, error: error))
             }
         }
@@ -235,13 +177,13 @@ func dangerousMigration() {
 }
 ```
 
-The migration is **idempotent by design**: already-migrated keys return `nil` from UserDefaults in Step 1 and are skipped. Failed keys retain their original values, ready for retry. This makes it safe to re-run after crash, app kill, or OOM termination.
+Run this migration before normal credential writes. A retry skips keys whose legacy value has already been deleted. When a crash leaves both copies, verify the destination and finish cleanup before resuming normal writes.
 
 ---
 
 ## Versioned Migration with Schema Tracking
 
-A production system needs version tracking to avoid re-running completed migrations and to handle users who skip versions. The schema version belongs in the **keychain** (survives reinstalls), not UserDefaults.
+A production system needs version tracking to avoid re-running completed migrations and to handle users who skip versions. Store the schema version alongside the credentials it tracks. Handle a missing version when no keychain data remains.
 
 ```swift
 // ✅ CORRECT: Versioned chain migration with schema version in keychain
@@ -260,7 +202,7 @@ actor MigrationCoordinator {
     }
 
     func migrateIfNeeded() async -> MigrationState {
-        // Guard: protected data must be available (pre-warming defense)
+        // Guard: protected data must be available (locked-device launch)
         let dataAvailable = await MainActor.run {
             UIApplication.shared.isProtectedDataAvailable
         }
@@ -294,7 +236,7 @@ actor MigrationCoordinator {
         }
     }
 
-    // MARK: - Schema Version (stored in keychain, survives reinstall)
+    // MARK: - Schema Version (stored alongside the keychain data)
 
     private func readSchemaVersion() -> Int {
         guard let data = try? keychainRead(
@@ -313,7 +255,7 @@ actor MigrationCoordinator {
     // MARK: - V1: UserDefaults → Keychain
 
     private func migrateV0toV1_UserDefaultsToKeychain() async throws {
-        let migrator = AtomicMigrator(keychain: KeychainManager.shared)
+        let migrator = VerifiedMigrator(keychain: KeychainManager.shared)
         let results = await migrator.migrateUserDefaultsKeys(
             ["authToken", "refreshToken", "apiSecret"],
             service: serviceName
@@ -340,7 +282,7 @@ actor MigrationCoordinator {
         let archiveData = try Data(contentsOf: archiveURL)
         guard let session = try NSKeyedUnarchiver.unarchivedObject(
             ofClass: LegacySession.self, from: archiveData) else {
-            throw AtomicMigrator.MigrationError.corruptArchive(path: archiveURL.path)
+            throw VerifiedMigrator.MigrationError.corruptArchive(path: archiveURL.path)
         }
 
         let sessionData = try JSONEncoder().encode(session.toModernSession())
@@ -349,7 +291,7 @@ actor MigrationCoordinator {
         // Verify before deleting archive file
         let verified = try keychainRead(service: serviceName, account: "userSession")
         guard verified == sessionData else {
-            throw AtomicMigrator.MigrationError.verificationFailed(key: "userSession")
+            throw VerifiedMigrator.MigrationError.verificationFailed(key: "userSession")
         }
         try FileManager.default.removeItem(at: archiveURL)
     }
@@ -381,7 +323,7 @@ private extension OSLog {
 // ❌ INCORRECT: Runs every launch, no version check, no verification, no legacy delete
 func brokenMigration() {
     // No version check — runs every single launch
-    // No isProtectedDataAvailable check — fails during pre-warm
+    // No isProtectedDataAvailable check — may fail during locked-device launch
     if let token = UserDefaults.standard.string(forKey: "authToken") {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -401,24 +343,18 @@ The chain migration approach (v1 → v2 → v3 sequentially) is deliberately cho
 
 ---
 
-## Orphaned Items: Why You Must Never Rename kSecAttrService
+## Renaming a Keychain Service or Account
+
+Changing only the attributes used for lookups makes older items unreachable
+through the new lookup. For an in-place attribute change, use a narrowly
+scoped `SecItemUpdate`, supplying the old attributes in the query and the new
+attributes in the update dictionary. Check the returned status. See [Updating and deleting keychain items](https://sosumi.ai/documentation/security/updating-and-deleting-keychain-items).
+
+When intentionally keeping a separate copy for a migration window, use a
+read, write, verify, and delete sequence:
 
 ```swift
-// ❌ INCORRECT: SecItemUpdate CANNOT change primary key attributes
-let query: [String: Any] = [
-    kSecClass as String: kSecClassGenericPassword,
-    kSecAttrService as String: "OldServiceName",
-    kSecAttrAccount as String: "authToken"
-]
-let update: [String: Any] = [
-    kSecAttrService as String: "com.mycompany.myapp" // ERROR: primary key
-]
-// SecItemUpdate returns an error — primary keys are immutable via Update
-SecItemUpdate(query as CFDictionary, update as CFDictionary)
-```
-
-```swift
-// ✅ CORRECT: Full rekey migration when service name must change
+// Copy-based migration when a separate destination item is needed
 func migrateServiceName() async throws {
     let oldService = "OldServiceName"
     let newService = "com.mycompany.myapp"
@@ -428,27 +364,29 @@ func migrateServiceName() async throws {
         let oldData: Data
         do {
             oldData = try keychainRead(service: oldService, account: account)
-        } catch { continue } // Already migrated or never existed
+        } catch KeychainError.itemNotFound {
+            continue // Already migrated or never existed
+        }
 
         try keychainSave(oldData, service: newService, account: account)
 
         // Verify new location before deleting old
         let verified = try keychainRead(service: newService, account: account)
         guard verified == oldData else {
-            throw AtomicMigrator.MigrationError.verificationFailed(key: account)
+            throw VerifiedMigrator.MigrationError.verificationFailed(key: account)
         }
         try keychainDelete(service: oldService, account: account)
     }
 }
 ```
 
-**Lock down your `kSecAttrService` value early and never change it.** Use your bundle identifier (e.g., `com.mycompany.myapp`) — it's unique, stable, and conventional.
+Choose a stable `kSecAttrService`, such as the app’s bundle identifier, and plan a migration before changing it.
 
 ---
 
 ## Background Launch and the Locked-Device Trap
 
-iOS 15+ pre-warming and background execution (push notifications, background fetch, Live Activities) can launch your app while the device is locked. The `kSecAttrAccessible` value you choose determines whether keychain operations succeed in these contexts.
+Background execution can launch your app while the device is locked. The `kSecAttrAccessible` value you choose determines whether keychain operations succeed in these contexts.
 
 > For the complete accessibility constant selection matrix with data protection tiers and security trade-offs, see `keychain-access-control.md` § The "When" Layer: Seven Accessibility Constants. The table below summarizes the four constants most relevant to background migration scenarios.
 
@@ -688,7 +626,7 @@ actor MockMigrationKeychain: MigrationKeychainProtocol {
 ```
 
 ```swift
-// ✅ Example: verify atomic behavior — legacy data preserved on failure
+// Verify that a failed write leaves the legacy value available for retry
 @Test func migrationPreservesLegacyDataOnKeychainFailure() async {
     let mock = MockMigrationKeychain()
     mock.simulatedError = .unexpectedStatus(-25308) // Simulate locked device
@@ -696,7 +634,7 @@ actor MockMigrationKeychain: MigrationKeychainProtocol {
     let defaults = UserDefaults(suiteName: "test")!
     defaults.set("secret-token", forKey: "authToken")
 
-    let migrator = AtomicMigrator(keychain: mock)
+    let migrator = VerifiedMigrator(keychain: mock)
     let results = await migrator.migrateUserDefaultsKeys(
         ["authToken"], service: "com.myapp"
     )
@@ -728,18 +666,18 @@ Standard deletion APIs are sufficient. The residual risk is unencrypted backups 
 
 ## Conclusion
 
-The core insight of safe keychain migration: **deletion is the irreversible step, not the write**. Every pattern in this file follows from that principle — verify before deleting, defer when uncertain, and treat keychain persistence across reinstalls as a feature to plan for rather than a bug to fight. The five most impactful decisions are: using `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` for background-safe encrypted storage, implementing first-launch cleanup before SDK initialization, storing schema versions in keychain rather than UserDefaults, gating all migration behind `isProtectedDataAvailable`, and never changing `kSecAttrService` after shipping.
+Verify before deleting, defer migration when protected data is unavailable, and handle both retained and missing credentials after a reinstall.
 
 ---
 
 ## Summary Checklist
 
-1. **First-launch cleanup runs before any SDK initialization** — uses UserDefaults flag to detect reinstall, wipes stale keychain items, includes `kSecAttrSynchronizableAny` to catch iCloud-synced items
-2. **Migration is atomic: read → write → verify → delete** — legacy data is never deleted until keychain write is confirmed by read-back; failed keys remain intact for retry
-3. **Schema version stored in keychain, not UserDefaults** — survives app reinstall; version only advances after all migration steps succeed
-4. **Protected data availability checked before any migration** — guards against iOS 15+ pre-warming and locked-device scenarios; defers via `protectedDataDidBecomeAvailableNotification`
+1. **Per-install cleanup is scoped** — run before session restore only if policy requires it. Match the app-private, non-synchronizable item and check the status.
+2. **Verify before deleting** — read back the keychain write, then delete the legacy value. A failed write leaves the original available for retry.
+3. **Schema version tracks keychain data** — advances after successful migration and handles an absent version.
+4. **Protected data availability checked before any migration** — guards against locked-device scenarios; defers via `protectedDataDidBecomeAvailableNotification`
 5. **`errSecInteractionNotAllowed` (-25308) is never treated as "item missing"** — distinguishes locked-device failures from genuine absence; never deletes on read failure without checking status code
-6. **`kSecAttrService` and `kSecAttrAccount` are immutable after shipping** — changing either orphans existing items; `SecItemUpdate` cannot modify primary keys; use full rekey migration if change is unavoidable
+6. **Service and account changes are deliberate migrations** — select the old keychain item before updating its attributes or copying it to the new location.
 7. **`kSecAttrAccessible` is never included in search queries** — causes phantom "not-found then duplicate" mismatches; set only during add or in update dictionary
 8. **Default accessibility is `AfterFirstUnlockThisDeviceOnly`** — background-safe, not synced, not backed up; matches Apple's own credential storage patterns
 9. **Deferred legacy cleanup with rollback window** — keep legacy data for 30 days post-migration as safety net; timestamp stored in keychain

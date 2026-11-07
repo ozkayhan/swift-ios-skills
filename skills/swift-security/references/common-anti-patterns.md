@@ -17,7 +17,7 @@
 - [Anti-Pattern #6 — Nonce Reuse in AES-GCM](#anti-pattern-6-nonce-reuse-in-aes-gcm)
 - [Anti-Pattern #7 — MD5/SHA-1 for Security Purposes](#anti-pattern-7-md5sha-1-for-security-purposes)
 - [Anti-Pattern #8 — Logging Sensitive Data](#anti-pattern-8-logging-sensitive-data)
-- [Anti-Pattern #9 — Not Clearing Keychain on First Launch](#anti-pattern-9-not-clearing-keychain-on-first-launch)
+- [Anti-Pattern #9 — Assuming Uninstall Resets the Keychain](#anti-pattern-9-assuming-uninstall-resets-the-keychain)
 - [Anti-Pattern #10 — Non-Cryptographic RNG for Security Operations](#anti-pattern-10-non-cryptographic-rng-for-security-operations)
 - [Quick Reference Matrix](#quick-reference-matrix)
 - [CI/CD Detection Strategy](#cicd-detection-strategy)
@@ -534,64 +534,17 @@ grep -rn 'os_log.*%{public}' --include="*.swift" | \
 
 ---
 
-## Anti-Pattern #9 — Not Clearing Keychain on First Launch
+## Anti-Pattern #9 — Assuming Uninstall Resets the Keychain
 
 **Severity:** MEDIUM | **OWASP:** M9 (Insecure Data Storage) | **Fix effort:** Low
 
-Keychain items persist in a system-wide encrypted database managed by `securityd`, outside the app sandbox. App deletion removes the sandbox but keychain items survive. Apple DTS engineer Quinn "The Eskimo!" confirmed this as "currently expected behaviour despite being an obvious privacy concern." Consequences: stale credentials on reinstall, cross-user data leakage on device resale, and Firebase SDK authentication errors on reinstall. Full migration patterns: see `migration-legacy-stores.md`.
+Uninstall may leave keychain items behind. Validate any retained session
+before reuse. A missing `UserDefaults` flag is not enough evidence to delete
+credentials. Broad class-only `SecItemDelete` queries can remove items from
+shared access groups or iCloud Keychain.
 
-**❌ The missing pattern — AI never generates this:**
-
-```swift
-@main
-struct MyApp: App {
-    var body: some Scene {
-        WindowGroup { ContentView() }
-    }
-    // Stale keychain items from previous install persist silently
-}
-```
-
-**✅ Secure — first-launch keychain cleanup:**
-
-```swift
-@main
-struct MyApp: App {
-    init() { clearKeychainIfFirstLaunch() }
-
-    var body: some Scene {
-        WindowGroup { ContentView() }
-    }
-
-    private func clearKeychainIfFirstLaunch() {
-        let defaults = UserDefaults.standard
-        guard !defaults.bool(forKey: "hasLaunchedBefore") else { return }
-
-        // UserDefaults was cleared on uninstall → this is first launch
-        for secClass in [kSecClassGenericPassword, kSecClassInternetPassword,
-                         kSecClassCertificate, kSecClassKey, kSecClassIdentity] {
-            SecItemDelete([
-                kSecClass: secClass,
-                kSecAttrSynchronizable: kSecAttrSynchronizableAny
-            ] as NSDictionary)
-        }
-        defaults.set(true, forKey: "hasLaunchedBefore")
-    }
-}
-```
-
-Place this before initializing any SDKs (Firebase, analytics) that read from Keychain. Including `kSecAttrSynchronizableAny` ensures iCloud Keychain items are also cleared.
-
-**MASTG tests:** MASTG-TEST-0300, MASTG-TEST-0301. **Legacy:** MSTG-STORAGE-11.
-
-**Detection heuristic:**
-
-```bash
-grep -rn "SecItemAdd\|SecItemCopyMatching" --include="*.swift" -l | \
-  xargs grep -L "hasLaunchedBefore\|isFirstLaunch\|firstRun"
-grep -rn "SecItemDelete" --include="*.swift" -l | \
-  xargs grep "hasLaunchedBefore\|isFirstLaunch"
-```
+Use the scoped example in `migration-legacy-stores.md` if app-local cleanup
+is part of the product’s reinstall policy. See [Apple Developer Technical Support](https://developer.apple.com/forums/thread/36442).
 
 ---
 

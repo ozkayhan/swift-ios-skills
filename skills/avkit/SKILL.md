@@ -74,6 +74,7 @@ Do not subclass it.
 ```swift
 import AVKit
 
+@MainActor
 func presentPlayer(from viewController: UIViewController, url: URL) {
     let player = AVPlayer(url: url)
     let playerVC = AVPlayerViewController()
@@ -299,6 +300,7 @@ Add a standalone AirPlay route picker button outside the player UI:
 ```swift
 import AVKit
 
+@MainActor
 func addRoutePicker(to containerView: UIView) {
     let routePicker = AVRoutePickerView(frame: CGRect(x: 0, y: 0, width: 44, height: 44))
     routePicker.activeTintColor = .systemBlue
@@ -359,6 +361,13 @@ playerVC.updatesNowPlayingInfoCenter = false
 AVKit handles subtitle and closed caption display automatically when the media
 contains appropriate text tracks. Users control subtitle preferences in
 Settings > Accessibility > Subtitles & Captioning.
+
+On iOS 27+, eligible English audio can also get system-generated English
+subtitles, and iOS can translate English subtitles into supported languages.
+`AVPlayerViewController` includes the selection controls. In a custom player,
+use `AVLegibleMediaOptionsMenuController` (iOS 26.4+) to add the system subtitle menu
+without replacing your player controls. Keep authored captions when available.
+See [Apple’s generated subtitles walkthrough](https://sosumi.ai/videos/play/wwdc2026/256/).
 
 ### Programmatic Selection
 

@@ -20,12 +20,12 @@
       "id": 1,
       "name": "migration-accuracy-review",
       "prompt": "Review this SwiftUI iOS 26 migration note: always mark every @Observable type @MainActor; `Color(uiColor:)` is deprecated and replaced by shader libraries; SwiftUI `.copyable`, `.cuttable`, and `.pasteDestination` are iOS 16 APIs; `matchedTransitionSource` and `navigationTransition(.zoom)` are iOS 26 only; `PreviewProvider`, `EditButton`, and `.onDelete` are all deprecated. Correct the note.",
-      "expected_output": "A source-grounded correction that narrows actor isolation to UI-bound observable state, keeps Color(uiColor:) valid for UIKit bridging, states current Apple docs list copy/cut/command paste modifiers as macOS 13+ and iOS/iPadOS 27 beta rather than iOS 16/iOS 26 defaults, marks matchedTransitionSource/navigation zoom as iOS 18+, and distinguishes modern defaults from APIs that are not formally deprecated.",
+      "expected_output": "A source-grounded correction that narrows actor isolation to UI-bound observable state, keeps Color(uiColor:) valid for UIKit bridging, states current Apple docs list copy/cut/command paste modifiers as macOS 13+ and iOS/iPadOS 27+ rather than iOS 16/iOS 26 defaults, marks matchedTransitionSource/navigation zoom as iOS 18+, and distinguishes modern defaults from APIs that are not formally deprecated.",
       "files": [],
       "assertions": [
         "Narrows `@MainActor` guidance to UI-bound observable stores/view models and avoids a universal rule for every `@Observable` type.",
         "States that `Color(uiColor:)` remains valid for bridging existing UIKit colors.",
-        "Does not recommend `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16 or iOS 26 defaults; cites current Apple docs as macOS 13+ and iOS/iPadOS 27 beta for those command modifiers.",
+        "Does not recommend `.copyable`, `.cuttable`, or command-based `.pasteDestination(for:action:validator:)` as iOS 16 or iOS 26 defaults; cites current Apple docs as macOS 13+ and iOS/iPadOS 27+ for those command modifiers.",
         "Corrects `matchedTransitionSource` and `navigationTransition(.zoom)` availability to iOS 18+.",
         "Treats `#Preview` as the modern preview default without falsely saying all `PreviewProvider` use is compiler-deprecated.",
         "Treats `EditButton`, `.onDelete`, and `.onMove` as still valid for edit-mode list workflows while recommending `.swipeActions` for contextual row actions."

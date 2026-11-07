@@ -45,7 +45,7 @@ let msg = "Hello"
 
 Xcode adds discovered keys to the String Catalog automatically. Mark translations as Needs Review, Translated, or Stale in the editor.
 
-For detailed String Catalog workflows, migration, and testing strategies, see [references/string-catalogs.md](references/string-catalogs.md).
+For detailed String Catalog workflows, Xcode 27 agent-assisted translation, migration, and testing strategies, see [references/string-catalogs.md](references/string-catalogs.md).
 
 Generated symbols are an Xcode 26 typed-access layer on top of String Catalogs;
 they do not change the catalog's Xcode 15 availability.

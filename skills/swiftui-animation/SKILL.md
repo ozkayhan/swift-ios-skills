@@ -400,7 +400,7 @@ withAnimation(.easeIn) { isVisible.toggle() } // CORRECT: own mutation
 
 ### 2. Expensive work or actor-isolated reads inside animation closures
 
-`keyframeAnimator` / `PhaseAnimator` content closures run every frame. Precompute expensive values, animate only visual properties, and capture state/env values before `@Sendable` keyframe closures.
+SwiftUI calls the keyframe animator’s content closure every frame. A phase animator supplies discrete phase values and animates between them. Precompute expensive values and capture state/env values before `@Sendable` keyframe closures. See [Controlling animation timing](https://sosumi.ai/documentation/swiftui/controlling-the-timing-and-movements-of-your-animations).
 
 ### 3. Missing reduce motion support
 

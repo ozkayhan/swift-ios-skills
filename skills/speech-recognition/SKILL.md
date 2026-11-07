@@ -188,7 +188,9 @@ final class LiveTranscriber {
             }
         }
 
-        // Install audio tap
+        // This SFSpeechRecognizer compatibility path appends mutable PCM buffers.
+        // For new AVAudioEngine capture on iOS 27+, prefer installAudioTap,
+        // which supplies read-only, Sendable buffers.
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) {
@@ -338,6 +340,8 @@ Load [references/speechanalyzer-patterns.md](references/speechanalyzer-patterns.
 - [ ] For iOS 26+: volatile results are replaced by finalized results, not duplicated
 
 ## References
+
+- [Sendable audio taps (iOS 27+)](https://sosumi.ai/documentation/avfaudio/avaudionode/installaudiotap(onbus:buffersize:format:tapprovider:))
 
 - [Speech framework](https://sosumi.ai/documentation/speech)
 - [SpeechAnalyzer](https://sosumi.ai/documentation/speech/speechanalyzer)

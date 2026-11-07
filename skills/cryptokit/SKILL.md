@@ -35,10 +35,11 @@ Use SHA256/SHA384/SHA512 on iOS 13+; SHA3_256/SHA3_384/SHA3_512 require iOS 26+.
 
 ```swift
 import CryptoKit
+import Foundation
 
 let data = Data("Hello, world!".utf8)
 let digest = SHA256.hash(data: data)
-let hex = digest.compactMap { String(format: "%02x", $0) }.joined()
+let hex = digest.map { String(format: "%02x", $0) }.joined()
 ```
 
 ### SHA-3 availability

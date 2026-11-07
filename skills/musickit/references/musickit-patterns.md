@@ -245,7 +245,7 @@ func fetchLibrarySongs() async throws -> MusicItemCollection<Song> {
 ```swift
 func fetchPlaylists() async throws -> MusicItemCollection<Playlist> {
     var request = MusicLibraryRequest<Playlist>()
-    request.sort(by: \.lastModifiedDate, ascending: false)
+    request.sort(by: \.libraryAddedDate, ascending: false)
     let response = try await request.response()
     return response.items
 }
@@ -259,7 +259,10 @@ func addToPlaylist(_ playlist: Playlist, songs: [Song]) async throws {
     let subscription = try await MusicSubscription.current
     guard subscription.hasCloudLibraryEnabled else { return }
 
-    try await MusicLibrary.shared.add(songs, to: playlist)
+    var updatedPlaylist = playlist
+    for song in songs {
+        updatedPlaylist = try await MusicLibrary.shared.add(song, to: updatedPlaylist)
+    }
 }
 ```
 
@@ -329,6 +332,14 @@ Add `audio` to `UIBackgroundModes` in Info.plist:
 ```
 
 ### Handling Interruptions
+
+On iOS 27+, observe `AVAudioSession.didBecomeInactiveNotification` to update
+playback state, and `AVAudioSession.resumptionRecommendationNotification` to
+consider resuming. Read the `AVAudioSession.ResumptionContext` from
+`notification.userInfo?[AVAudioSession.resumptionContextKey]`. Resume only if
+`recommendation == .shouldResume` and the user still intends playback.
+
+Keep the following interruption notification for older systems:
 
 ```swift
 func observeInterruptions() {

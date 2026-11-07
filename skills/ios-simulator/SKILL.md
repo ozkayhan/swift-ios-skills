@@ -24,6 +24,11 @@ setup, or boot recovery commands.
 
 ## Device Lifecycle
 
+Xcode 27 opens a compact Device Hub window when you run on a simulator. To
+manage simulators without running an app, choose **Manage Devices…** from
+the run destination menu or **Xcode > Open Developer Tool > Device Hub**.
+Keep using `simctl` for scripted device and app operations.
+
 ### Listing Devices and Runtimes
 
 ```bash
@@ -337,7 +342,7 @@ does not establish real-device fidelity.
 | Barometer | No |
 | NFC (Core NFC) | No |
 | Bluetooth (Core Bluetooth) | No — use a real device for BLE testing |
-| CarPlay display simulation | Supported through Simulator's external display/CarPlay option; still verify in vehicle or device setups |
+| CarPlay display simulation | Xcode 27.2 Device Hub requires a physical iPhone connected by USB for CarPlay. The separate CarPlay display option in the legacy Simulator is a different workflow. Verify in a vehicle or supported device setup. |
 | Face ID / Touch ID hardware | No hardware — use Features > Face ID / Touch ID menu in Simulator |
 | Memory warnings, location changes, manual iCloud sync trigger | Supported through Simulator menus or `simctl`; manual sync can test app callback handling |
 | Automatic iCloud propagation and conflicts | Hardware required for real accounts/devices, notification-triggered sync, background delivery, conflicts, and account/device state differences |
@@ -430,7 +435,8 @@ xcrun simctl erase all
 
 ## References
 
-- [Running your app in Simulator or on a device](https://sosumi.ai/documentation/xcode/running-your-app-in-simulator-or-on-a-device)
+- [Managing simulated and physical devices in Device Hub](https://sosumi.ai/documentation/xcode/managing-your-simulated-and-physical-devices-in-device-hub)
+- [Xcode 27.2 Release Notes](https://sosumi.ai/documentation/xcode-release-notes/xcode-27_2-release-notes)
 - [Downloading and installing additional Xcode components](https://sosumi.ai/documentation/xcode/installing-additional-simulator-runtimes)
 - [Testing in Simulator versus testing on hardware devices](https://sosumi.ai/documentation/xcode/testing-in-simulator-versus-testing-on-hardware-devices)
 - [Testing complex hardware device scenarios in Simulator](https://sosumi.ai/documentation/xcode/testing-complex-hardware-device-scenarios-in-simulator)

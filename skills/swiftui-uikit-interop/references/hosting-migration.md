@@ -19,6 +19,12 @@ Replace one `UIViewController` at a time with a `UIHostingController` wrapping a
 
 ### Strategy
 
+Check the host app’s lifecycle before moving screens. UIKit apps built with
+the iOS 27 SDK must adopt the scene-based lifecycle to launch on iOS 27.
+Configure the app’s scene and create its window and root hosting controller
+from the scene delegate when UIKit owns the window. Keep process-level setup
+in the app delegate. See [Transitioning to the UIKit scene-based life cycle](https://sosumi.ai/documentation/uikit/transitioning-to-the-uikit-scene-based-life-cycle).
+
 1. Pick a leaf screen (one that does not contain child view controllers).
 2. Rewrite its UI in SwiftUI.
 3. Replace the UIKit view controller with `UIHostingController` wherever it was instantiated.

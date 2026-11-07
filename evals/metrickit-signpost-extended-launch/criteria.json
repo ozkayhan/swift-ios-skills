@@ -4,7 +4,7 @@
   "checklist": [
     {
       "name": "Modern log handle",
-      "description": "Uses the retained MetricManager instance and manager.logHandle(category:) in the iOS 27 branch.",
+      "description": "Uses the static MetricManager.logHandle(category:) method in the iOS 27 branch.",
       "max_score": 20
     },
     {

@@ -359,11 +359,18 @@ func configureAudioSession(forPlayback: Bool = true) throws {
 try AVAudioSession.sharedInstance().setCategory(
     .playAndRecord,
     mode: .videoChat,
-    options: [.defaultToSpeaker, .allowBluetooth]
+    options: [.defaultToSpeaker, .allowBluetoothHFP]
 )
 ```
 
 ### Handling Audio Interruptions
+
+`AVPlayer` handles automatic pausing. For custom interruption UI on iOS 27+,
+observe `AVAudioSession.didBecomeInactiveNotification` and
+`AVAudioSession.resumptionRecommendationNotification`. Read the recommendation
+from `AVAudioSession.ResumptionContext` under `AVAudioSession.resumptionContextKey`
+and honor the user's playback intent. Use the observer below only for older
+systems. See [Handling audio interruptions](https://sosumi.ai/documentation/avfaudio/handling-audio-interruptions).
 
 ```swift
 NotificationCenter.default.addObserver(

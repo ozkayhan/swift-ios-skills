@@ -198,16 +198,18 @@ CloudKit capability + Remote notifications; private/shared databases only.
 ```swift
 import CloudKit
 
-final class SyncManager: CKSyncEngineDelegate {
-    let syncEngine: CKSyncEngine
-
-    init(container: CKContainer = .default()) {
-        let config = CKSyncEngine.Configuration(
+actor SyncManager: CKSyncEngineDelegate {
+    private let container: CKContainer
+    private(set) lazy var syncEngine = CKSyncEngine(
+        CKSyncEngine.Configuration(
             database: container.privateCloudDatabase,
             stateSerialization: Self.loadState(),
             delegate: self
         )
-        self.syncEngine = CKSyncEngine(config)
+    )
+
+    init(container: CKContainer = .default()) {
+        self.container = container
     }
 
     func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
@@ -231,16 +233,19 @@ final class SyncManager: CKSyncEngineDelegate {
         syncEngine: CKSyncEngine
     ) async -> CKSyncEngine.RecordZoneChangeBatch? {
         let pending = syncEngine.state.pendingRecordZoneChanges
-            .filter { context.options.zoneIDs.contains($0) }
+            .filter { context.options.scope.contains($0) }
         return await CKSyncEngine.RecordZoneChangeBatch(
             pendingChanges: pending
-        ) { recordID in self.recordToSend(for: recordID) }
+        ) { recordID in await self.recordToSend(for: recordID) }
     }
 }
 
-// Schedule changes
-let zoneID = CKRecordZone.ID(zoneName: "NotesZone")
-let recordID = CKRecord.ID(recordName: noteID, zoneID: zoneID)
+// Schedule changes with a long-lived SyncManager.
+let syncEngine = await syncManager.syncEngine
+let zone = CKRecordZone(zoneName: "NotesZone")
+// When creating the custom zone, enqueue its save before its records.
+syncEngine.state.add(pendingDatabaseChanges: [.saveZone(zone)])
+let recordID = CKRecord.ID(recordName: noteID, zoneID: zone.zoneID)
 syncEngine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
 
 // Trigger immediate sync (pull-to-refresh)

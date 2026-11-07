@@ -303,9 +303,11 @@ struct SortedTripList: View {
 
 ## Sectioned Queries Pattern
 
-Current Apple docs include `sectionBy:` `Query` initializers for sectioned
-queries in iOS 27 / Xcode 27 beta. Use them only when the deployment target and
-SDK support those beta APIs.
+On iOS 27+, use a `Query` with `sectionBy:` when the section key is a
+`String` or `String?` property on the model. Declare a
+`SectionedResults<Model, String>` result, or use `_query.sections` (replace
+`query` with the property name) with an array-typed query. Optional section
+keys use the empty string for nil. See [Query.sections](https://sosumi.ai/documentation/swiftdata/query/sections).
 
 For iOS 26-compatible guidance, custom grouping, or section keys derived from
 formatters/business logic, build sectioned views manually:

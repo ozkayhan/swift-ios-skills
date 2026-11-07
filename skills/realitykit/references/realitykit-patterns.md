@@ -151,23 +151,17 @@ RealityView { content in
 
 ## Custom Materials and Lighting
 
-### SimpleMaterial Variations
+### Material Variations
 
 ```swift
 // Metallic material
-let metallic = SimpleMaterial(
-    color: .init(tint: .gray, texture: nil),
-    roughness: .float(0.1),
-    isMetallic: true
-)
+var metallic = SimpleMaterial(color: .gray, isMetallic: true)
+metallic.roughness = .float(0.1)
 
 // Transparent material
-var transparent = SimpleMaterial()
-transparent.color = .init(
-    tint: UIColor.blue.withAlphaComponent(0.5),
-    texture: nil
-)
-transparent.blending = .transparent(opacity: 0.5)
+var transparent = PhysicallyBasedMaterial()
+transparent.baseColor = .init(tint: .blue)
+transparent.blending = .transparent(opacity: .init(floatLiteral: 0.5))
 
 // Textured material
 if let texture = try? await TextureResource(named: "wood") {
@@ -181,12 +175,15 @@ if let texture = try? await TextureResource(named: "wood") {
 
 ### Environment Lighting
 
+On iOS, set a skybox on a virtual camera for an environment image and its
+lighting. To apply light to specific entities, use
+`ImageBasedLightComponent` and `ImageBasedLightReceiverComponent`.
+
 ```swift
-RealityView { content in
-    // Use image-based lighting
+RealityView { (content: inout RealityViewCameraContent) in
+    content.camera = .virtual
     if let resource = try? await EnvironmentResource(named: "studio") {
-        content.environment.lighting.resource = resource
-        content.environment.lighting.intensityExponent = 1.0
+        content.environment = .skybox(resource)
     }
 }
 ```
@@ -281,13 +278,14 @@ This makes virtual objects appear to go behind real-world surfaces.
 
 ### Environment Configuration
 
-```swift
-RealityView { content in
-    // Configure the background
-    content.environment.background = .color(.clear)  // AR camera passthrough
+Select the spatial-tracking camera for iOS AR passthrough. Use a virtual
+camera fallback when AR tracking or camera access is unavailable.
 
-    // Adjust lighting intensity
-    content.environment.lighting.intensityExponent = 1.2
+```swift
+RealityView { (content: inout RealityViewCameraContent) in
+    // Use the live camera on supported iOS devices.
+    content.camera = .spatialTracking
+    content.environment = .default
 }
 ```
 

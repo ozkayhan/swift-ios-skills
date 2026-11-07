@@ -1,7 +1,5 @@
 # PaperKit Patterns
 
-> **Beta-sensitive.** PaperKit is new in iOS/iPadOS 26, macOS 26, and visionOS 26. Verify all patterns against current Apple documentation before shipping.
-
 Extended patterns, data persistence strategies, rendering, multi-platform considerations, and advanced `FeatureSet` usage for PaperKit.
 
 ## Contents
@@ -107,7 +105,7 @@ Task { [weak self] in
 Avoid saving on every stroke. Debounce saves to reduce disk I/O:
 
 ```swift
-class MarkupViewController: UIViewController, PaperMarkupViewController.Delegate {
+class MarkupViewController: UIViewController, @MainActor PaperMarkupViewController.Delegate {
     var paperVC: PaperMarkupViewController!
     private var saveTask: Task<Void, Never>?
 
@@ -310,7 +308,7 @@ import PaperKit
 import PencilKit
 import UIKit
 
-class RecipeMarkupViewController: UIViewController, PaperMarkupViewController.Delegate {
+class RecipeMarkupViewController: UIViewController, @MainActor PaperMarkupViewController.Delegate {
     var paperVC: PaperMarkupViewController!
     var toolPicker: PKToolPicker!
     let store: MarkupStore

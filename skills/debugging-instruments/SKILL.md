@@ -207,11 +207,16 @@ func loadData() async {
 error: Dependencies could not be resolved because root depends on 'Package' 1.0.0..<2.0.0
 
 # Fix: check Package.resolved and update version ranges
-# Reset package caches if needed:
-rm -rf ~/Library/Caches/org.swift.swiftpm
-rm -rf .build
+# For corrupt build artifacts or repository cache, run the relevant command:
+swift package reset       # Reset this package’s build directory and cache
+swift package purge-cache # Purge the global repository cache if necessary
 swift package resolve
 ```
+
+Swift 6.4 uses Swift Build by default for Swift Package Manager. Record
+`swift --version` and the exact build command when comparing a failure
+against results from earlier toolchains or a CI runner. See
+[Swift 6.4 release notes](https://www.swift.org/blog/swift-6.4-released/).
 
 ### Module Not Found / Linker Errors
 

@@ -159,6 +159,11 @@ Fine-tuning: `.fitted(horizontal:vertical:)` constrains fitting axes; `.sticky(h
 Route every programmatic close through the same save/validate/discard gate;
 `interactiveDismissDisabled` guards interactive dismissal only.
 
+On iOS 27+, use the `item:` binding overload of `.alert` or
+`.confirmationDialog` when the selected value drives the presentation. On
+earlier targets, keep the `isPresented:presenting:` overload and ensure the
+Boolean and payload stay in sync. See [What’s new in SwiftUI](https://sosumi.ai/videos/play/wwdc2026/269/).
+
 **Enum-driven sheet routing:** Define a `SheetDestination` enum that is `Identifiable`, store it on the router, and map it with a shared view modifier. This lets any child view present sheets without prop-drilling. See [references/sheets.md](references/sheets.md) for the full centralized sheet routing pattern.
 
 ## Tab-Based Navigation

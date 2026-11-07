@@ -417,7 +417,7 @@ func balanceChartData(from balances: [AccountBalance]) -> [BalanceDataPoint] {
                 id: balance.id,
                 date: bal.asOfDate,
                 amount: signed,
-                currencyCode: bal.currencyCode
+                currencyCode: bal.amount.currencyCode
             )
         case .availableAndBooked(let available, _):
             let signed = available.creditDebitIndicator == .credit
@@ -426,7 +426,7 @@ func balanceChartData(from balances: [AccountBalance]) -> [BalanceDataPoint] {
                 id: balance.id,
                 date: available.asOfDate,
                 amount: signed,
-                currencyCode: balance.currencyCode
+                currencyCode: available.amount.currencyCode
             )
         @unknown default:
             return nil

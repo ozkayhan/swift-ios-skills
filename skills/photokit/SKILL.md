@@ -5,7 +5,7 @@ description: "Implement, review, or improve photo picking, camera capture, and m
 
 # PhotoKit
 
-Modern patterns for photo picking, camera capture, image loading, and media permissions targeting iOS 26+ with Swift 6.3. Patterns are backward-compatible to iOS 16 unless noted. See [references/photokit-patterns.md](references/photokit-patterns.md) for complete picker recipes and [references/camera-capture.md](references/camera-capture.md) for AVCaptureSession patterns.
+Modern patterns for photo picking, camera capture, image loading, and media permissions targeting iOS 26+ with Swift 6.4. Patterns are backward-compatible to iOS 16 unless noted. See [references/photokit-patterns.md](references/photokit-patterns.md) for complete picker recipes and [references/camera-capture.md](references/camera-capture.md) for AVCaptureSession patterns.
 
 ## Contents
 
@@ -103,22 +103,22 @@ Filter with `PHPickerFilter` composites to restrict selectable media:
 
 ```swift
 // Images only
-PhotosPicker(selection: $items, matching: .images)
+PhotosPicker("Select Photos", selection: $items, matching: .images)
 
 // Videos only
-PhotosPicker(selection: $items, matching: .videos)
+PhotosPicker("Select Photos", selection: $items, matching: .videos)
 
 // Live Photos only
-PhotosPicker(selection: $items, matching: .livePhotos)
+PhotosPicker("Select Photos", selection: $items, matching: .livePhotos)
 
 // Screenshots only
-PhotosPicker(selection: $items, matching: .screenshots)
+PhotosPicker("Select Photos", selection: $items, matching: .screenshots)
 
 // Images and videos combined
-PhotosPicker(selection: $items, matching: .any(of: [.images, .videos]))
+PhotosPicker("Select Photos", selection: $items, matching: .any(of: [.images, .videos]))
 
 // Images excluding screenshots
-PhotosPicker(selection: $items, matching: .all(of: [.images, .not(.screenshots)]))
+PhotosPicker("Select Photos", selection: $items, matching: .all(of: [.images, .not(.screenshots)]))
 ```
 
 ### Loading Selected Items with Transferable
@@ -348,7 +348,7 @@ AsyncImage(url: imageURL) { phase in
 .clipShape(.rect(cornerRadius: 12))
 ```
 
-`AsyncImage` does not cache images across view redraws. For production apps with many images, use a dedicated image loading library or `URLCache`-based caching.
+`AsyncImage` caches downloaded image data according to HTTP cache policy on iOS 27+. Keep a dedicated pipeline when you need prefetching, decoded-image caching, or downsampling. For cache control on iOS 26 and earlier, use a custom loader.
 
 ### Downsampling Large Images
 

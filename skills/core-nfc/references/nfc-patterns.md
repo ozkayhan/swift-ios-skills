@@ -376,7 +376,7 @@ extension NFCScannerModel: NFCNDEFReaderSessionDelegate {
                     if let url = record.wellKnownTypeURIPayload() {
                         scannedURL = url
                     }
-                    if let (text, _) = record.wellKnownTypeTextPayload() {
+                    if let text = record.wellKnownTypeTextPayload().0 {
                         scannedText = text
                     }
                 }

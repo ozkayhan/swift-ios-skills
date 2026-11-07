@@ -217,6 +217,7 @@ automatically records view-through impressions after 2 seconds of display and
 click-through impressions on tap.
 
 ```swift
+import AdAttributionKit
 import StoreKit
 
 let config = SKOverlay.AppConfiguration(appIdentifier: "1234567890",
